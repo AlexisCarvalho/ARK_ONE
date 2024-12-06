@@ -1,0 +1,11 @@
+//####################################################################################################//
+
+este código foi a versão utilizada na apresentação, o código atual já apresenta algumas correções
+
+//####################################################################################################//
+
+caso queira compilar o código para teste será necessário modificar as bibliotecas, webServer.h na
+pasta core do esp32 (a pasta é indicada quando é apresentado o erro no compilador), pois para este 
+projeto ela conflita com a tela tft, e a biblioteca do display tft que está incluída na pasta libraries.
+
+//####################################################################################################//
