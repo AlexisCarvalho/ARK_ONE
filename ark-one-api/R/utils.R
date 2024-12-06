@@ -1,0 +1,1 @@
+token_secret_key <- charToRaw(Sys.getenv("TOKEN_SECRET_KEY"))
