@@ -45,20 +45,20 @@ You can install all website dependencies using the `npm install` command within 
 ### Project Creation
 The project was created using the following command:
 
-`npx create-react-app ark-one-website --template typescript`
+- `npx create-react-app ark-one-website --template typescript`
 
 ### NPM Packages
 You can install the required NPM packages using the following commands, or run the website_dependencies script inside the ark-one-website folder to install them all at once:
 
-`npm install react react-dom react-scripts typescript --save`
-`npm install react-router-dom --save`
-`npm install axios --save`
-`npm install @mui/material @emotion/react @emotion/styled --save`
-`npm install react-leaflet leaflet --save`
-`npm install --save-dev @types/leaflet`
-`npm install leaflet/dist/leaflet.css --save`
-`npm install source-map-loader –save-dev`
-`npm install html5-qrcode`
+- `npm install react react-dom react-scripts typescript --save`
+- `npm install react-router-dom --save`
+- `npm install axios --save`
+- `npm install @mui/material @emotion/react @emotion/styled --save`
+- `npm install react-leaflet leaflet --save`
+- `npm install --save-dev @types/leaflet`
+- `npm install leaflet/dist/leaflet.css --save`
+- `npm install source-map-loader –save-dev`
+- `npm install html5-qrcode`
 
 ### Project Files
 Copy the src folder to the new project and replace the existing one.
