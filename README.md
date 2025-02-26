@@ -65,3 +65,21 @@ Copy the src folder to the new project and replace the existing one.
 
 ## API
 When you first run the API, it will attempt to automatically install all the necessary libraries. However, it relies on the system_dependencies script to ensure that the installation completes without issues. The same approach applies to the Website.
+
+You need to configure the ambient varibles creating the .Renviron on the API folder, an example can be found bellow.
+
+### Name of the database
+DB_NAME=one_database
+
+### Server Address Information
+DB_HOST=localhost
+
+### User credentials to access the database
+DB_USER=postgres    
+DB_PASSWORD=user1232024
+
+### Database Port
+DB_PORT=5432
+
+### Token generation Key
+TOKEN_SECRET_KEY=jTkdh7uIhG5hHGTjh1jjd6sll7lYUY2D2bvkkldk

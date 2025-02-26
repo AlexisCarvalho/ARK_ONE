@@ -4,8 +4,8 @@
 # |                       |
 # +-----------------------+
 
-source("../db-functions/user-functions.R", chdir = TRUE)
-source("../db-functions/products-functions.R", chdir = TRUE)
+source("../services/user_service.R", chdir = TRUE)
+source("../services/product_service.R", chdir = TRUE)
 
 #* Get the tipe of the user
 #* @tag Person

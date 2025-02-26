@@ -1,10 +1,10 @@
-source("../db-functions/esp32-functions.R", chdir = TRUE)
-
 # +-----------------+
 # |                 |
 # |     STATUS      |
 # |                 |
 # +-----------------+
+
+source("../services/solar_panel_service.R", chdir = TRUE)
 
 #* Verifies the current state of the API
 #*

@@ -1,118 +1,121 @@
 # plumber.R
-if (!require("plumber")) install.packages("plumber", dependencies = TRUE); library(plumber)
-if (!require("jose")) install.packages("jose", dependencies = TRUE); library(jose)
-if (!require("digest")) install.packages("digest", dependencies = TRUE); library(digest)
-if (!require("data.table")) install.packages("data.table", dependencies = TRUE); library(data.table)
-if (!require("DBI")) install.packages("DBI", dependencies = TRUE); library(DBI)
-if (!require("RPostgres")) install.packages("RPostgres", dependencies = TRUE); library(RPostgres)
-if (!require("qcc")) install.packages("qcc", dependencies = TRUE); library(qcc)
-if (!require("e1071")) install.packages("e1071", dependencies = TRUE); library(e1071)
-if (!require("forecast")) install.packages("forecast", dependencies = TRUE); library(forecast)
-if (!require("isotree")) install.packages("isotree", dependencies = TRUE); library(isotree)
-if (!require("dbscan")) install.packages("dbscan", dependencies = TRUE); library
-if (!require("future")) install.packages("future", dependencies = TRUE); library(future)
-if (!require("parallel")) install.packages("parallel", dependencies = TRUE); library(parallel)
+if (requireNamespace("renv", quietly = TRUE)) {
+  renv::activate()
+}
+
+readRenviron(".Renviron")
+
+source("R/utils/librarys.R")
+source("R/utils/env_setup.R")
+source("R/utils/auth-filter.R", chdir = TRUE)
+source("R/utils/database_pool_setup.R", chdir = TRUE)
+
+# +-------------------------------------+
+# |     PACKAGES AND INITIAL CONFIG     |
+# +-------------------------------------+
 
 # Configuring parallelism using multisession to maintain Windows Compatibility
 future::plan(future::multisession, workers = parallel::detectCores() - 1)
 
-source("R/auth-filter.R", chdir = TRUE)
+# Starting the connection with the database using a connection pool
+construct_pool()
 
+# Create an object that represents a empty plumber API
 pr <- plumber::pr()
 
 # +-------------------------------------+
-# |         API ACCESS POLICY           |
+# |  GLOBAL MIDDLEWARE CONFIGURATION    |
 # +-------------------------------------+
 
 # ADD CORS Filter globally
 pr <- pr %>%
   pr_filter("cors", function(req, res) {
-    res$setHeader("Access-Control-Allow-Origin", "*") 
-    res$setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS") 
-    res$setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization") 
-    if (req$REQUEST_METHOD == "OPTIONS") {
-      res$status <- 200
-      return(list())
-    } else {
-      plumber::forward() 
-    }
+    res$setHeader("Access-Control-Allow-Origin", "*")
+    plumber::forward()
+  }) %>%
+  pr_hook("exit", function() {
+    poolClose(pool)
   })
 
 # +-------------------------------------+
-# |     ENDPOINTS ROUTER CRIATION       |
+# |     ENDPOINTS ROUTER CREATION       |
 # +-------------------------------------+
 
-account_router <- plumber::plumb("R/endpoints/account.R")
-analytics_router <- plumber::plumb("R/endpoints/analytics.R")
-anomaly_detection_router <- plumber::plumb("R/endpoints/anomaly-detection.R")
-category_router <- plumber::plumb("R/endpoints/category.R")
-esp32_data_entry_router <- plumber::plumb("R/endpoints/esp32-data-entry.R")
-location_router <- plumber::plumb("R/endpoints/location.R")
-products_router <- plumber::plumb("R/endpoints/products.R")
-solar_cell_router <- plumber::plumb("R/endpoints/solar-cell.R")
-statistics_router <- plumber::plumb("R/endpoints/statistics.R")
-status_router <- plumber::plumb("R/endpoints/status.R")
-time_series_router <- plumber::plumb("R/endpoints/time-series.R")
-person_router <- plumber::plumb("R/endpoints/person.R")
+# Define the route paths
+route_paths <- c(
+  account = "R/controllers/account.R",
+  analytics = "R/controllers/analytics.R",
+  anomaly_detection = "R/controllers/anomaly-detection.R",
+  category = "R/controllers/category.R",
+  esp32_data_entry = "R/controllers/esp32-data-entry.R",
+  location = "R/controllers/location.R",
+  products = "R/controllers/products.R",
+  solar_cell = "R/controllers/solar-cell.R",
+  statistics = "R/controllers/statistics.R",
+  status = "R/controllers/status.R",
+  time_series = "R/controllers/time-series.R",
+  person = "R/controllers/person.R"
+)
+
+# Create a named list of routers
+routers <- setNames(lapply(route_paths, plumber::plumb), names(route_paths))
 
 # +-------------------------------------+
 # |    FILTER ADDITION TO ENDPOINTS     |
 # +-------------------------------------+
 
-anomaly_detection_router <- anomaly_detection_router %>%
+# Apply authentication filter only to specific routers
+routers$anomaly_detection <- routers$anomaly_detection %>%
   pr_filter("authenticate", authenticate)
-
-solar_cell_router <- solar_cell_router %>%
+routers$person <- routers$person %>%
   pr_filter("authenticate", authenticate)
-
-statistics_router <- statistics_router %>%
+routers$solar_cell <- routers$solar_cell %>%
   pr_filter("authenticate", authenticate)
-
-time_series_router <- time_series_router %>%
+routers$statistics <- routers$statistics %>%
   pr_filter("authenticate", authenticate)
-
-person_router <- person_router %>%
+routers$time_series <- routers$time_series %>%
   pr_filter("authenticate", authenticate)
 
 # +-------------------------------------+
 # |        MOUNTING ENDPOINTS           |
 # +-------------------------------------+
 
-pr$mount("/Account", account_router)                      # No authentication required
-pr$mount("/Analytics", analytics_router)                  # No authentication required
-pr$mount("/Anomaly_Detection", anomaly_detection_router)  # Requires authentication
-pr$mount("/Category", category_router)                    # Requires authentication
-pr$mount("/ESP32_DataEntry", esp32_data_entry_router)     # No authentication required
-pr$mount("/Location", location_router)                    # Requires authentication
-pr$mount("/Products", products_router)                    # Requires authentication
-pr$mount("/Solar_Cell", solar_cell_router)                # Requires authentication
-pr$mount("/Statistics", statistics_router)                # Requires authentication
-pr$mount("/Status", status_router)                        # No authentication required
-pr$mount("/Time_Series", time_series_router)              # Requires authentication
-pr$mount("/Person", person_router)                        # No authentication required
+pr$mount("/Anomaly_Detection", routers$anomaly_detection)  # Requires authentication
+pr$mount("/Person", routers$person)                        # Requires authentication
+pr$mount("/Solar_Cell", routers$solar_cell)                # Requires authentication
+pr$mount("/Statistics", routers$statistics)                # Requires authentication
+pr$mount("/Time_Series", routers$time_series)              # Requires authentication
+pr$mount("/Category", routers$category)                    # No authentication required
+pr$mount("/Location", routers$location)                    # No authentication required
+pr$mount("/Products", routers$products)                    # No authentication required
+pr$mount("/Account", routers$account)                      # No authentication required
+pr$mount("/Analytics", routers$analytics)                  # No authentication required
+pr$mount("/ESP32_DataEntry", routers$esp32_data_entry)     # No authentication required
+pr$mount("/Status", routers$status)                        # No authentication required
 
 # +-------------------------------------+
 # |      DOCUMENTATION SETTINGS         |
 # +-------------------------------------+
 
-pr <- pr %>% pr_set_api_spec(function(spec) 
+pr <- pr %>% pr_set_api_spec(function(spec)
 {
   spec$components$securitySchemes$bearerAuth <- list(
     type = "http",
     scheme = "bearer",
     bearerFormat = "JWT"
   )
-  
+
   spec$security <- list(list(bearerAuth = list()))
-  
+
+  # Specify one specific endpoint to suppass the authentication
   spec$paths$`/Account/register`$get$security <- NULL
   spec$paths$`/Account/login`$get$security <- NULL
   spec$paths$`/Status/ping`$get$security <- NULL
   spec$path$`/ESP32_DataEntry/send_data/solar_panel`$get$security <- NULL
-  
+
   spec$info$title <- "Solar Panel One API"
   spec$info$description <- "This API is constructed using the R Language and the packages Plumber, and it is designated to work beside the system of solar panels \"One\" that uses ESP32. The objective is to make queries on the database, analyze and process the data generated by the system and plot them with it interactive warnings depending on the variations of the data."
-  
+
   return(spec)
 })
 

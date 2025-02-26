@@ -1,25 +1,25 @@
 if (!require("httr")) install.packages("httr", dependencies = TRUE); library(httr)
 if (!require("jsonlite")) install.packages("jsonlite", dependencies = TRUE); library(jsonlite)
 
-envios_por_minuto <- 60 
+envios_por_minuto <- 60
 intervalo <- 60 / envios_por_minuto
 
 esp32_unique_id <- "sampleInformation"
 servo_tower_angle <- 0
 
 tempo <- 0
-amplitude <- 5  
-offset <- 15  
-frequencia <- 0.05  
+amplitude <- 5
+offset <- 15
+frequencia <- 0.05
 codigo_anterior <- 1
 
 angle_increment <- 1
 angle_direction <- 1
 
-temp_amplitude <- 2  
-temp_offset_solar <- 30  
-temp_offset_esp32 <- 35  
-temp_frequencia <- 0.02  
+temp_amplitude <- 2
+temp_offset_solar <- 30
+temp_offset_esp32 <- 35
+temp_frequencia <- 0.02
 
 send_data <- function(esp32_unique_id, voltage, current, servo_tower_angle, max_elevation, min_elevation, elevation_angle, solar_panel_temperature, esp32_core_temperature) {
   url <- "http://192.168.0.139:8000/ESP32_DataEntry/send_data/solar_panel"
@@ -44,14 +44,14 @@ send_data <- function(esp32_unique_id, voltage, current, servo_tower_angle, max_
   resposta <- content(response, "text", encoding = "UTF-8")
   
   if (codigo_anterior != codigo) {
-    cat("Código:", codigo, "| Resposta:", resposta, "\n")  
+    cat("Código:", codigo, "| Resposta:", resposta, "\n")
   }
   codigo_anterior <<- codigo
 }
 
 while (TRUE) {
   voltage <- offset + amplitude * sin(frequencia * tempo)
-  current <- offset + amplitude * sin(frequencia * tempo + pi / 2)  
+  current <- offset + amplitude * sin(frequencia * tempo + pi / 2)
   
   voltage <- max(0, voltage)
   current <- max(0, current)

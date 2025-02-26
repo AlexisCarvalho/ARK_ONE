@@ -4,11 +4,7 @@
 # |                       |
 # +-----------------------+
 
-if (!require("ggplot2")) install.packages("ggplot2", dependencies = TRUE); library(ggplot2)
-if (!require("dplyr")) install.packages("dplyr", dependencies = TRUE); library(dplyr)
-if (!require("grid")) install.packages("grid", dependencies = TRUE); library(grid)
-if (!require("DBI")) install.packages("DBI", dependencies = TRUE); library(DBI)
-source("../db-functions/esp32-functions.R", chdir = TRUE)
+source("../services/solar_panel_service.R", chdir = TRUE)
 
 # Function to generate a line graph showing average voltage over the current week using test data
 #* @description This endpoint provides a graph displaying the daily average voltage over the current week for a specified product instance, considering the week starts on Sunday, with test data.

@@ -4,7 +4,7 @@
 # |                       |
 # +-----------------------+
 
-source("../db-functions/location-functions.R", chdir = TRUE)
+source("../services/location_data_service.R", chdir = TRUE)
 
 #* @tag Location
 #* @param esp32_unique_id 

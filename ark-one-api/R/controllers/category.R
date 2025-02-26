@@ -4,7 +4,7 @@
 # |                       |
 # +-----------------------+
 
-source("../db-functions/category-functions.R", chdir = TRUE)
+source("../services/category_service.R", chdir = TRUE)
 
 #* Create a new category
 #* @param category_name The name of the category

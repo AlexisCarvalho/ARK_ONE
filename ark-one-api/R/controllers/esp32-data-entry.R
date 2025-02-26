@@ -11,8 +11,8 @@
 # and tables for each one may not be the better thing to do, and this was
 # the first code i wrote in R... So... It definitely needs some work
 
-source("../db-functions/esp32-functions.R", chdir = TRUE)
-source("../db-functions/location-functions.R", chdir = TRUE)
+source("../services/solar_panel_service.R", chdir = TRUE)
+source("../services/location_data_service.R", chdir = TRUE)
 
 #* Stores the values entered with the treatment of the data and the proper analysis of their fluctuation
 #* @response 200 Data Received
@@ -37,8 +37,6 @@ function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, 
     voltage <- as.numeric(voltage)
     current <- as.numeric(current)
     
-    voltage <- voltage/4
-    
     if (is.na(esp32_unique_id) || is.na(voltage) || is.na(current) || is.na(servo_tower_angle) || is.na(solar_panel_temperature) || is.na(esp32_core_temperature)) {
       return(list(status = "error", message = "Null values are not permitted"))
     }
@@ -48,7 +46,7 @@ function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, 
     if(response$status == "success")
     {
       res$status <- 200
-      return(response)  
+      return(response)
     } else
     {
       res$status <- 404
@@ -61,14 +59,14 @@ function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, 
 }
 
 #* @tag ESP32_DataEntry
-#* @param esp32_unique_id 
+#* @param esp32_unique_id
 #* @get /receive_data/solar_panel
 function(res, esp32_unique_id) {
   current_time <- Sys.time()
   current_date <- as.POSIXlt(current_time)
-  
+
   location_informs <- return_location_of_ESP32_using_id(esp32_unique_id)
-  
+
   response <- list(
     year = current_date$year + 1900,
     month = current_date$mon + 1,
@@ -76,16 +74,16 @@ function(res, esp32_unique_id) {
     hour = current_date$hour,
     minute = current_date$min,
     second = current_date$sec,
-    latitude = 0,      
-    longitude = 0     
+    latitude = 0,
+    longitude = 0
   )
-  
+
   if(location_informs$status == "error")
   {
     res$status <- 400
     return(list(status = location_informs$status, message = location_informs$message))
   }
-  
+
   if(nrow(location_informs$data) == 0)
   {
     res$status <- 200

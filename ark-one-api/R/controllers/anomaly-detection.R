@@ -4,7 +4,7 @@
 # |                       |
 # +-----------------------+
 
-source("../db-functions/esp32-functions.R", chdir = TRUE)
+source("../services/solar_panel_service.R", chdir = TRUE)
 
 #* Returns a list of outliers based on Z-scores
 #* @response 200 A list of outliers based on the Z-score method

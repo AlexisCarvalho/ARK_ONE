@@ -4,7 +4,7 @@
 # |                       |
 # +-----------------------+
 
-source("../db-functions/products-functions.R", chdir = TRUE)
+source("../services/product_service.R", chdir = TRUE)
 
 #* Create a new product
 #* @param product_name The name of the product
