@@ -5,8 +5,8 @@ if (requireNamespace("renv", quietly = TRUE)) {
 
 readRenviron(".Renviron")
 
-source("R/utils/librarys.R")
-source("R/utils/env_setup.R")
+source("R/utils/librarys.R", chdir = TRUE)
+source("R/utils/env_setup.R", chdir = TRUE)
 source("R/utils/auth-filter.R", chdir = TRUE)
 source("R/utils/database_pool_setup.R", chdir = TRUE)
 
@@ -16,9 +16,6 @@ source("R/utils/database_pool_setup.R", chdir = TRUE)
 
 # Configuring parallelism using multisession to maintain Windows Compatibility
 future::plan(future::multisession, workers = parallel::detectCores() - 1)
-
-# Starting the connection with the database using a connection pool
-construct_pool()
 
 # Create an object that represents a empty plumber API
 pr <- plumber::pr()
@@ -34,7 +31,7 @@ pr <- pr %>%
     plumber::forward()
   }) %>%
   pr_hook("exit", function() {
-    poolClose(pool)
+    close_all_pools()
   })
 
 # +-------------------------------------+
@@ -80,6 +77,7 @@ routers$time_series <- routers$time_series %>%
 # |        MOUNTING ENDPOINTS           |
 # +-------------------------------------+
 
+pr$mount("/Account", routers$account)                      # No authentication required
 pr$mount("/Anomaly_Detection", routers$anomaly_detection)  # Requires authentication
 pr$mount("/Person", routers$person)                        # Requires authentication
 pr$mount("/Solar_Cell", routers$solar_cell)                # Requires authentication
@@ -88,7 +86,6 @@ pr$mount("/Time_Series", routers$time_series)              # Requires authentica
 pr$mount("/Category", routers$category)                    # No authentication required
 pr$mount("/Location", routers$location)                    # No authentication required
 pr$mount("/Products", routers$products)                    # No authentication required
-pr$mount("/Account", routers$account)                      # No authentication required
 pr$mount("/Analytics", routers$analytics)                  # No authentication required
 pr$mount("/ESP32_DataEntry", routers$esp32_data_entry)     # No authentication required
 pr$mount("/Status", routers$status)                        # No authentication required

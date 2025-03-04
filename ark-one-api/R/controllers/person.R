@@ -143,7 +143,7 @@ function(id) {
 #* @response 400 Bad Request if no fields are provided to update or if the ID is invalid
 #* @response 404 Not Found if the user does not exist
 #* @response 500 Internal Server Error
-function(id, name = NULL, email = NULL) {
+function(id, name, email) {
   if (missing(id) || !is.numeric(as.numeric(id))) {
     return(list(status = "error", message = "Invalid or missing user ID", status_code = 400))
   }

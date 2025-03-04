@@ -37,7 +37,7 @@ validate_credentials <- function(email, password) {
       return(list(status = "success", message = "Valid Credentials", token = token))
     },
     error = function(e) {
-      return(list(status = "error", message = paste("Unexpected Error:", e$message), token = ""))
+      return(list(status = "internal_server_error", message = paste("Unexpected Error:", e$message), token = ""))
     }
   )
 }
@@ -45,11 +45,13 @@ validate_credentials <- function(email, password) {
 # Verify the email pattern and ensure user input is valid
 # before calling validate_credentials
 account_login <- function(email, password) {
-  if (is_missing_or_empty(email) || is_missing_or_empty(password)) {
+  required_fields <- list(email, password)
+
+  if (any(sapply(required_fields, is_missing_or_empty))) {
     return(list(status = "bad_request", message = "Email and Password are Required", token = ""))
   }
 
-  if (!is.character(email) || !is.character(password)) {
+  if (any(sapply(required_fields, function(x) !is.character(x)))) {
     return(list(status = "bad_request", message = "Invalid Input Type", token = ""))
   }
 
@@ -60,30 +62,45 @@ account_login <- function(email, password) {
   return(validate_credentials(email, password))
 }
 
+create_user <- function(name, email, password, user_type) {
+  tryCatch({
+      hashed_password <- hashpw(password)
+
+      insert_user(name, email, hashed_password, user_type)
+
+      return(list(status = "success", message = "User Registered Successfully"))
+    }, 
+    error = function(e) {
+      constraint_name <- find_matching_constraint_pgsql(e$message)
+
+      if (!is.null(constraint_name)) {
+        return(constraint_violation_response(constraint_name))
+      }
+
+      return(list(status = "internal_server_error", message = paste("Unexpected Error:", error_message)))
+    }
+  )
+}
 
 # Function to create a user
-create_user <- function(name, email, password, user_type = "regular") {
+account_register <- function(name, email, password, user_type) {
+  required_fields <- list(name, email, password, user_type)
+
+  if (any(sapply(required_fields, is_missing_or_empty))) {
+    return(list(status = "bad_request", message = "Email and Password are Required"))
+  }
+
+  if (any(sapply(required_fields, function(x) !is.character(x)))) {
+    return(list(status = "bad_request", message = "Invalid Input Type"))
+  }
+
   if (!validate_email(email)) {
     return(list(status = "bad_request", message = "Invalid Email Pattern"))
   }
 
-  valid_user_types <- c("regular", "admin", "moderator")
-  if (!(user_type %in% valid_user_types)) {
-    return(list(status = "bad_request", message = "Invalid User Type"))
-  }
-
-  hashed_password <- hashpw(password)
-
-  result <- insert_user(name, email, hashed_password, user_type)
-  if (result$status == "error") {
-    if (result$constraint == "user_data_email_key") {
-      return(list(status = "bad_request", message = "The Email is Already Registered"))
-    }
-    return(result)
-  }
-
-  return(result)
+  return(create_user(name, email, password, user_type))
 }
+
 
 
 
@@ -102,8 +119,7 @@ get_user_type <- function(id_user) {
   }
 }
 
-get_user_type_from_request <- function(req)
-{
+get_user_type_from_request <- function(req) {
   auth_header <- req$HTTP_AUTHORIZATION
 
   if (missing(auth_header) || !grepl("Bearer ", auth_header)) {
@@ -113,34 +129,34 @@ get_user_type_from_request <- function(req)
   # Extract token
   token <- sub("Bearer ", "", auth_header)
 
-  tryCatch({
-
-    jwt <- jwt_decode_hmac(token, charToRaw(Sys.getenv("TOKEN_SECRET_KEY")))
-
-    id <- jwt$id_user
-    user_type <- jwt$user_type
-
-    if (is.null(id) || !is.numeric(as.numeric(id))) {
-      return(list(status = "error", message = "Invalid user ID in token"))
-    }
-
-    if (is.null(user_type))
+  tryCatch(
     {
-      return(list(status = "error", message = "User Not Found"))
+      jwt <- jwt_decode_hmac(token, charToRaw(Sys.getenv("TOKEN_SECRET_KEY")))
+
+      id <- jwt$id_user
+      user_type <- jwt$user_type
+
+      if (is.null(id) || !is.numeric(as.numeric(id))) {
+        return(list(status = "error", message = "Invalid user ID in token"))
+      }
+
+      if (is.null(user_type)) {
+        return(list(status = "error", message = "User Not Found"))
+      }
+
+      return(list(status = "success", data = user_type))
+    },
+    error = function(e) {
+      return(list(status = "error", message = "Failed to retrieve user type", details = e$message))
     }
-
-    return(list(status = "success", data = user_type))
-
-  }, error = function(e) {
-    return(list(status = "error", message = "Failed to retrieve user type", details = e$message))
-  })
+  )
 }
 
 # Function to get all users
 get_all_users <- function() {
   con <- getConn()
   on.exit(dbDisconnect(con))
-  
+
   users <- dbReadTable(con, "user_data")
   return(users)
 }
@@ -149,14 +165,14 @@ get_all_users <- function() {
 get_user_by_id <- function(id) {
   con <- getConn()
   on.exit(dbDisconnect(con))
-  
+
   query <- "SELECT * FROM user_data WHERE id_user = $1"
   user <- dbGetQuery(con, query, params = list(id))
-  
+
   if (nrow(user) == 0) {
     return(list(status = "error", message = "User not found"))
   }
-  
+
   return(user)
 }
 
@@ -164,18 +180,18 @@ get_user_by_id <- function(id) {
 update_user_by_id <- function(id, name = NULL, email = NULL) {
   con <- getConn()
   on.exit(dbDisconnect(con))
-  
+
   # Check if user exists
   user_check <- dbGetQuery(con, "SELECT * FROM user_data WHERE id_user = $1", params = list(id))
-  
+
   if (nrow(user_check) == 0) {
     return(list(status = "error", message = "User not found"))
   }
-  
+
   updates <- c()
-  
+
   if (!is.null(name)) updates <- c(updates, sprintf("name = '%s'", name))
-  
+
   if (!is.null(email)) {
     # Check for unique email
     existing_user <- dbGetQuery(con, "SELECT * FROM user_data WHERE email = $1 AND id_user != $2", params = list(email, id))
@@ -184,13 +200,13 @@ update_user_by_id <- function(id, name = NULL, email = NULL) {
     }
     updates <- c(updates, sprintf("email = '%s'", email))
   }
-  
+
   if (length(updates) > 0) {
     update_query <- paste(updates, collapse = ", ")
     dbExecute(con, sprintf("UPDATE user_data SET %s WHERE id_user = $1", update_query), params = list(id))
     return(list(status = "success", message = "User updated successfully"))
   }
-  
+
   return(list(status = "error", message = "No fields to update"))
 }
 
@@ -198,14 +214,14 @@ update_user_by_id <- function(id, name = NULL, email = NULL) {
 delete_user_by_id <- function(id) {
   con <- getConn()
   on.exit(dbDisconnect(con))
-  
+
   existing_user <- dbGetQuery(con, "SELECT * FROM user_data WHERE id_user = $1", params = list(id))
-  
+
   if (nrow(existing_user) == 0) {
     return(list(status = "error", message = "User not found"))
   }
-  
+
   dbExecute(con, "DELETE FROM user_data WHERE id_user = $1", params = list(id))
-  
+
   return(list(status = "success", message = "User deleted"))
 }
