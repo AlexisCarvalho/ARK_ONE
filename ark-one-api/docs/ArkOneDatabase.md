@@ -39,7 +39,7 @@ Stores user data.
 - `id_user` (UUID, PK, DEFAULT gen_random_uuid())
 - `name` (VARCHAR(100), NOT NULL)
 - `email` (VARCHAR(100), UNIQUE, NOT NULL)
-- `password` (VARCHAR(100), NOT NULL)
+- `password` (VARCHAR(60), NOT NULL)
 - `user_type` (VARCHAR(20), DEFAULT 'regular', CHECK `('regular', 'admin', 'moderator')`)
 - `registration_date` (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 
@@ -98,7 +98,55 @@ Many-to-many relationship between users and products.
 
 ---
 
-## 3. Deletion Behavior (`ON DELETE CASCADE` and `ON DELETE SET NULL`)
+## 3. Indexes
+
+Indexes are created to improve query performance by optimizing lookups on foreign keys and frequently queried fields.
+
+### 3.1. Product Category Index (`idx_product_category`)
+- **Table:** `products`
+- **Column:** `id_category`
+- **Purpose:** Speeds up queries filtering products by category.
+- **Example Query:**
+  ```sql
+  SELECT * FROM products WHERE id_category = 'some-uuid';
+  ```
+
+---
+
+### 3.2. Product Instance User Index (`idx_product_instance_user`)
+- **Table:** `product_instance`
+- **Column:** `id_user`
+- **Purpose:** Enhances performance when retrieving all product instances associated with a user.
+- **Example Query:**
+  ```sql
+  SELECT * FROM product_instance WHERE id_user = 'some-user-uuid';
+  ```
+
+---
+
+### 3.3. Location Product Instance Index (`idx_location_product_instance`)
+- **Table:** `location_data`
+- **Column:** `id_product_instance`
+- **Purpose:** Optimizes searches for the location of specific product instances.
+- **Example Query:**
+  ```sql
+  SELECT * FROM location_data WHERE id_product_instance = 'some-instance-uuid';
+  ```
+
+---
+
+### 3.4. ESP32 Data Product Instance Index (`idx_esp32_data_product_instance`)
+- **Table:** `esp32_data`
+- **Column:** `id_product_instance`
+- **Purpose:** Improves retrieval of ESP32 data for specific product instances.
+- **Example Query:**
+  ```sql
+  SELECT * FROM esp32_data WHERE id_product_instance = 'some-instance-uuid';
+  ```
+
+---
+
+## 4. Deletion Behavior (`ON DELETE CASCADE` and `ON DELETE SET NULL`)
 This table summarizes the effect of record deletion across different tables:
 
 | Source Table | Affected Table | Action |
@@ -112,7 +160,7 @@ This table summarizes the effect of record deletion across different tables:
 | `product_instance` | `location_data` | DELETE |
 | `product_instance` | `esp32_data` | DELETE |
 
-## 4. Constraints
+## 5. Constraints
 
 ### 🔹 CHECK Constraints
 
@@ -140,8 +188,8 @@ This table summarizes the effect of record deletion across different tables:
 
 - ***Table:*** location_data
 - **Columns:** `latitude` `longitude`  
-- ***Description:*** Ensures that both `latitude` and `longitude` are either provided together as valid coordinates or left NULL together.
-- ***Effect:*** Prevents inconsistent location data (e.g., having a latitude without a longitude).
+- ***Description:*** Ensures that both `latitude` and `longitude` are either provided together as valid coordinates or left NULL together. It verifies too if latitude is in between -90 AND 90 as well if longitude is between -180 and 180
+- ***Effect:*** Prevents inconsistent location data (e.g., having a latitude without a longitude or invalid values).
 
 ### 🔹 UNIQUE Constraints
 
@@ -163,11 +211,27 @@ This table summarizes the effect of record deletion across different tables:
 
 ---
 
+### **`location_data_id_product_instance_key`**  
+- **Table:** `location_data`  
+- **Column:** `id_product_instance`  
+- **Description:** Ensures that each product instance has at most one associated location entry.  
+- **Effect:** Prevents multiple location records for the same product instance, enforcing a one-to-one relationship between `product_instance` and `location_data`.  
+
+---
+
 ### **`product_instance_esp32_unique_id_key`**  
 - **Table:** `product_instance`  
 - **Column:** `esp32_unique_id`  
 - **Description:** Ensures that each ESP32 has a unique identifier in the database.  
 - **Effect:** Prevents the registration of a duplicate `esp32_unique_id`.  
+
+---
+
+### **`products_product_name_key`**  
+- **Table:** `products`  
+- **Column:** `product_name`  
+- **Description:** Ensures that each product has a unique name.  
+- **Effect:** Prevents the creation of multiple products with the same name, ensuring product names remain distinct.  
 
 ### 🔹 PRIMARY KEY Constraints
 

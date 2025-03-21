@@ -6,8 +6,6 @@
 
 source("../services/solar_panel_service.R", chdir = TRUE)
 
-# Needs revision
-
 #* Returns an extended summary of descriptive statistics for the Vcc column in T1
 #* @response 200 A detailed statistical summary including mean, median, SD, IQR, skewness, and kurtosis
 #* @response 400 Missing parameters

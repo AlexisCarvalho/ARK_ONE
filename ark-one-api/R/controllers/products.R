@@ -205,3 +205,92 @@ function(res, id_product) {
     return(list(status="error",message="Failed to delete Product" ,details=e$message));
   });
 }
+
+#* Register a product in the name of the user
+#* @param id_product The ID of the associated product
+#* @param esp32_unique_id The unique ESP32 identifier for this instance
+#* @tag Products
+#* @post /owned
+#* @response 201 Created if the instance is successfully created
+#* @response 400 Bad Request if required parameters are missing
+#* @response 500 Internal Server Error
+function(req, res, id_product, esp32_unique_id) {
+  tryCatch(
+    {
+      result <- future::value(future::future({
+        register_ESP32_from_request(req, id_product, esp32_unique_id)
+      }))
+
+      if (result$status == "success") {
+        res$status <- 201
+        return(list(status = "success", data = result$data))
+      } else {
+        res$status <- 400
+        return(list(status = "error", message = result$message))
+      }
+    },
+    error = function(e) {
+      res$status <- 500
+      return(list(status = "error", message = "Internal Server Error", details = e$message))
+    }
+  )
+}
+
+#* Get all products purchased by user
+#* @tag Products
+#* @get /owned
+#* @response 200 Returns the details of the specified user products
+#* @response 400 Bad Request if the Authorization header is missing or invalid
+#* @response 404 Not Found if the user does not exist or doesn't have any products
+#* @response 500 Internal Server Error
+function(req, res) {
+  tryCatch(
+    {
+      result <- future::value(future::future({
+        get_user_products_from_request(req)
+      }))
+
+      if (result$status == "success") {
+        res$status <- 200
+        return(list(status = "success", data = result$data))
+      } else {
+        res$status <- 404
+        return(list(status = "error", message = result$message))
+      }
+    },
+    error = function(e) {
+      res$status <- 500
+      return(list(status = "error", message = "Internal Server Error", details = e$message))
+    }
+  )
+}
+
+#* Get all products of a specific type purchased by user
+#* @param id_product
+#* @tag Products
+#* @get /owned/<id>
+#* @response 200 Returns the details of the specified user products
+#* @response 400 Bad Request if the Authorization header is missing or invalid
+#* @response 404 Not Found if the user does not exist or doesn't have any products
+#* @response 500 Internal Server Error
+function(req, res, id_product) {
+  tryCatch(
+    {
+      result <- future::value(future::future({
+        get_user_one_type_of_products_from_request(req, id_product)
+      }))
+
+      if (result$status == "success") {
+        res$status <- 200
+        return(list(status = "success", data = result$data))
+      } else {
+        res$status <- 404
+        return(list(status = "error", message = result$message))
+      }
+    },
+    error = function(e) {
+      res$status <- 500
+      return(list(status = "error", message = "Internal Server Error", details = e$message))
+    }
+  )
+}

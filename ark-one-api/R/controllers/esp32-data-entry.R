@@ -4,13 +4,6 @@
 # |                       |
 # +-----------------------+
 
-# The functions that save esp data in general need a rework, they are using 
-# the R normal error handling functions is that why tryCatch covers all the
-# function below, if you are wondering why, it's because in the future it will
-# change a lot, more products should be added and adding other variables
-# and tables for each one may not be the better thing to do, and this was
-# the first code i wrote in R... So... It definitely needs some work
-
 source("../services/solar_panel_service.R", chdir = TRUE)
 source("../services/location_data_service.R", chdir = TRUE)
 

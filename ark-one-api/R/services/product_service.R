@@ -51,7 +51,7 @@ update_product_by_id <- function(id_product, product_name, product_description,
                                  product_price) {
 
   con <- getConn()
-  on.exit(dbDisconnect(con))  # Ensure the connection is closed after execution
+  on.exit(dbDisconnect(con))  
 
   if (is.null(id_product) || !is.numeric(as.numeric(id_product))) {
     return(list(status = "error", message = "Invalid or missing product ID"))
@@ -129,8 +129,8 @@ get_products_by_user_id <- function(user_id) {
 
 # Function to search products by name
 search_products_by_name <- function(name) {
-  con <- getConn()  # Establish a connection to the database
-  on.exit(dbDisconnect(con))  # Ensure the connection is closed after execution
+  con <- getConn()  
+  on.exit(dbDisconnect(con))  
 
   query <- "SELECT * FROM products WHERE product_name ILIKE ?"
 
@@ -140,7 +140,7 @@ search_products_by_name <- function(name) {
     return(list(status = "error", message = "No products found with this name"))
   }
 
-  return(results)  # Return the found products
+  return(results)  
 }
 
 # +-----------------------+
@@ -295,7 +295,7 @@ update_product_instance_by_id <- function(id, id_product, id_user, esp32_unique_
   if (!is.null(esp32_unique_id)) updates <- c(updates, sprintf("esp32_unique_id = '%s'", esp32_unique_id))
 
   if (length(updates) > 0) {
-    update_query <- paste(updates, collapse = ", ")  # Combine updates into a single string
+    update_query <- paste(updates, collapse = ", ")  
     dbExecute(con, sprintf("UPDATE product_instance SET %s WHERE id_product_instance = ?", update_query), params = list(id))
     return(list(status = "success", message = "Product instance updated"))
   }
@@ -398,7 +398,6 @@ get_user_one_type_of_products_from_request <- function(req, id_product) {
     return(list(status = "error", message = "Missing or invalid Authorization header"))
   }
 
-  # Extract token
   token <- sub("Bearer ", "", auth_header)
 
   tryCatch({
@@ -441,7 +440,6 @@ register_ESP32_from_request <- function(req, id_product, esp32_unique_id) {
     return(list(status = "error", message = "Missing or invalid Authorization header"))
   }
 
-  # Extract token
   token <- sub("Bearer ", "", auth_header)
 
   tryCatch({
@@ -474,10 +472,6 @@ register_ESP32_from_request <- function(req, id_product, esp32_unique_id) {
 # +----------------------------------------+
 # |   PRODUCT INSTANCE - HELP FUNCTIONS    |
 # +----------------------------------------+
-# They are here just to retrieve data from
-# the database, don't treat errors
-# they may be treated on the funcionality
-# functions
 
 # Function to get all product instances for a specific user, including product name and esp32 unique ID
 get_products_purchased_by_user <- function(user_id) {

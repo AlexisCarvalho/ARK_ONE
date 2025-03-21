@@ -1,13 +1,10 @@
-source("../models/solar_panel_model.R", chdir = TRUE)
-
-# Idea: Use a system to save the id of the products that are already verifyed as registered to not need to execute a query all the time when a new entry by the esp comes
-# to the save_incoming_solar_panel_data, this way the first time it will be executed it will search and find out if is already registered or not by the time the api is running
-
 # +-------------------------------------+
 # |                                     |
 # |          SOLAR PANEL SERVICE        |
 # |                                     |
 # +-------------------------------------+
+
+source("../models/solar_panel_model.R", chdir = TRUE)
 
 recently_received_solar_panel_data <- data.table(id_product_instance = numeric(),
                                                  voltage = numeric(),

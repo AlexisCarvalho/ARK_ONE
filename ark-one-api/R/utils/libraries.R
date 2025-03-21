@@ -3,13 +3,13 @@ required_packages <- c(
   "plumber", "jose", "digest", "data.table", "DBI", "RPostgres",
   "qcc", "e1071", "forecast", "isotree", "dbscan", "future",
   "parallel", "jsonlite", "ggplot2", "dplyr", "grid", "magrittr",
-  "pool", "bcrypt", "uuid"
+  "pool", "bcrypt", "uuid", "testthat", "httr", "callr"
 )
 
-# Function to load quietly the packages and install the inexistent ones
+# Function to load quietly the packages and install the inexistent ones on the renv
 ensure_package <- function(pkg) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg, dependencies = TRUE)
+    renv::install(pkg)
   }
   library(pkg, character.only = TRUE)
 }

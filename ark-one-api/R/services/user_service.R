@@ -1,75 +1,172 @@
-source("../models/user_model.R", chdir = TRUE)
-source("../utils/regex.R", chdir = TRUE)
-source("../utils/utils.R", chdir = TRUE)
-
 # +-----------------------+
 # |                       |
 # |     USER SERVICE      |
 # |                       |
 # +-----------------------+
 
+source("../models/user_model.R", chdir = TRUE)
+source("../utils/regex.R", chdir = TRUE)
+source("../utils/utils.R", chdir = TRUE)
+
+# +-----------------------+
+# |    HELP FUNCTIONS     |
+# +-----------------------+
+
 # Generate a JWT with basic user params
 generate_token <- function(user) {
-  one_hour_in_seconds <- 3600
-  time <- Sys.time()
+  current_time <- Sys.time()
 
-  payload <- jwt_claim(
-    id_user = user$id_user,
-    username = user$name,
-    exp = time + one_hour_in_seconds,
-    jti = as.character(uuid::UUIDgenerate())
+  # Define token expiration based on user role
+  expiry_duration <- switch(user$user_type,
+    "admin" = as.difftime(30, units = "mins"),
+    "moderator" = as.difftime(1, units = "hours"),
+    "regular" = as.difftime(24, units = "hours"),
+    NULL
   )
 
-  return(jwt_encode_hmac(payload, charToRaw(Sys.getenv("TOKEN_SECRET_KEY"))))
+  # If a expire time for a certain user role is not set, 1 hour of expiration is set as default
+  if (is.null(expiry_duration)) expiry_duration <- as.difftime(1, units = "hours")
+
+  expiry_time <- current_time + expiry_duration
+
+  payload <- jwt_claim(
+    sub = user$id_user,
+    username = user$name,
+    role = user$user_type,
+    exp = as.numeric(expiry_time), # Converts to timestamp UNIX (For JWT)
+    jti = substr(uuid::UUIDgenerate(use.time = TRUE), 1, 8)
+  )
+
+  secret_key <- Sys.getenv("TOKEN_SECRET_KEY")
+  if (nchar(secret_key) == 0) stop("TOKEN_SECRET_KEY Is not defined.")
+
+  jwt_encode_hmac(payload, charToRaw(secret_key))
 }
 
-# Verify if the inserted password is correct and if it is call the token generation
+# Get the user id from his token using the request
+get_user_id_from_req <- function(req) {
+  tryCatch(
+    {
+      token <- get_token_from_req(req)
+      decoded_token <- decode_jwt_token(token)
+
+      decoded_token$sub
+    },
+    error = function(e) stop(e)
+  )
+}
+
+# Get the user type from his token using the request
+get_user_type_from_req <- function(req) {
+  tryCatch(
+    {
+      id_user <- get_user_id_from_req(req)
+      get_user_type_by_id(id_user)
+    },
+    error = function(e) stop(e)
+  )
+}
+
+# Contains the logic to check if a password is correct using bcrypt
+check_password <- function(input_password, stored_hashed_password) {
+  checkpw(input_password, stored_hashed_password)
+}
+
+# +-----------------------+
+# |        ACCOUNT        |
+# +-----------------------+
+# +-----------------------+
+# |        LOGIN          |
+# +-----------------------+
+
+# The function verifies if the inserted password is correct and if it is call the token generation
 validate_credentials <- function(email, password) {
   tryCatch(
     {
       user <- get_user_by_email(email)
 
       if (!is.data.frame(user) || nrow(user) == 0 || !check_password(password, user$password)) {
-        return(list(status = "not_found", message = "Invalid Credentials", token = ""))
+        return(list(
+          status = "not_found",
+          message = "Invalid Credentials",
+          data = list(token = NULL)
+        ))
       }
 
       token <- generate_token(user)
-      return(list(status = "success", message = "Valid Credentials", token = token))
+      return(list(
+        status = "success",
+        message = "Valid Credentials",
+        data = list(token = token)
+      ))
     },
     error = function(e) {
-      return(list(status = "internal_server_error", message = paste("Unexpected Error:", e$message), token = ""))
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message),
+        data = list(token = NULL)
+      )
     }
   )
 }
 
-# Verify the email pattern and ensure user input is valid
+# The function verifies if the email pattern and ensure user input is valid
 # before calling validate_credentials
 account_login <- function(email, password) {
-  required_fields <- list(email, password)
+  req_fields <- list(email, password)
 
-  if (any(sapply(required_fields, is_missing_or_empty))) {
-    return(list(status = "bad_request", message = "Email and Password are Required", token = ""))
+  if (any(sapply(req_fields, is_invalid_utf8))) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Input Type",
+      data = list(token = NULL)
+    ))
   }
 
-  if (any(sapply(required_fields, function(x) !is.character(x)))) {
-    return(list(status = "bad_request", message = "Invalid Input Type", token = ""))
+  if (any(sapply(req_fields, is_blank_string))) {
+    return(list(
+      status = "bad_request",
+      message =
+        "Email and Password are Required",
+      data = list(token = NULL)
+    ))
   }
 
-  if (!validate_email(email)) {
-    return(list(status = "bad_request", message = "Invalid Email Pattern", token = ""))
+  if (nchar(email) > 100 || !validate_email_pattern(email)) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Email Pattern or exceeds 100 characters",
+      data = list(token = NULL)
+    ))
   }
 
-  return(validate_credentials(email, password))
+  if (nchar(password) > 72 || !is_ascii(password)) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Password: Must be ASCII and below 72 characters",
+      data = list(token = NULL)
+    ))
+  }
+
+  validate_credentials(email, password)
 }
 
+# +-----------------------+
+# |       REGISTER        |
+# +-----------------------+
+
 create_user <- function(name, email, password, user_type) {
-  tryCatch({
+  tryCatch(
+    {
       hashed_password <- hashpw(password)
 
       insert_user(name, email, hashed_password, user_type)
 
-      return(list(status = "success", message = "User Registered Successfully"))
-    }, 
+      return(list(
+        status = "created",
+        message = "User Registered Successfully"
+      ))
+    },
     error = function(e) {
       constraint_name <- find_matching_constraint_pgsql(e$message)
 
@@ -77,151 +174,179 @@ create_user <- function(name, email, password, user_type) {
         return(constraint_violation_response(constraint_name))
       }
 
-      return(list(status = "internal_server_error", message = paste("Unexpected Error:", error_message)))
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", error_message)
+      )
     }
   )
 }
 
-# Function to create a user
+# Function to register a user
 account_register <- function(name, email, password, user_type) {
-  required_fields <- list(name, email, password, user_type)
+  req_fields <- list(name, email, user_type, password)
 
-  if (any(sapply(required_fields, is_missing_or_empty))) {
-    return(list(status = "bad_request", message = "Email and Password are Required"))
+  if (any(sapply(req_fields, is_invalid_utf8))) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Input Type"
+    ))
   }
 
-  if (any(sapply(required_fields, function(x) !is.character(x)))) {
-    return(list(status = "bad_request", message = "Invalid Input Type"))
+  if (any(sapply(req_fields, is_blank_string))) {
+    return(list(
+      status = "bad_request",
+      message = "All Required Fields must be completed"
+    ))
   }
 
-  if (!validate_email(email)) {
-    return(list(status = "bad_request", message = "Invalid Email Pattern"))
+  if (nchar(email) > 100) {
+    return(list(
+      status = "bad_request",
+      message = "Email can't exceed 100 characters"
+    ))
   }
 
-  return(create_user(name, email, password, user_type))
+  if (nchar(password) > 72 || !is_ascii(password)) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Password: Must be ASCII and below 72 characters"
+    ))
+  }
+
+  create_user(name, email, password, user_type)
 }
 
-
-
-
-get_user_type <- function(id_user) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  query <- paste("SELECT user_type FROM user_data WHERE id_user = $1", sep = "")
-
-  result <- dbGetQuery(con, query, params = list(id_user))
-
-  if (nrow(result) > 0) {
-    return(result$user_type)
-  } else {
-    return(NULL)
-  }
-}
-
-get_user_type_from_request <- function(req) {
-  auth_header <- req$HTTP_AUTHORIZATION
-
-  if (missing(auth_header) || !grepl("Bearer ", auth_header)) {
-    return(list(status = "error", message = "Missing or invalid Authorization header"))
-  }
-
-  # Extract token
-  token <- sub("Bearer ", "", auth_header)
-
-  tryCatch(
-    {
-      jwt <- jwt_decode_hmac(token, charToRaw(Sys.getenv("TOKEN_SECRET_KEY")))
-
-      id <- jwt$id_user
-      user_type <- jwt$user_type
-
-      if (is.null(id) || !is.numeric(as.numeric(id))) {
-        return(list(status = "error", message = "Invalid user ID in token"))
-      }
-
-      if (is.null(user_type)) {
-        return(list(status = "error", message = "User Not Found"))
-      }
-
-      return(list(status = "success", data = user_type))
-    },
-    error = function(e) {
-      return(list(status = "error", message = "Failed to retrieve user type", details = e$message))
-    }
-  )
-}
+# +-----------------------+
+# |         USER          |
+# +-----------------------+
+# +-----------------------+
+# |        GET ALL        |
+# +-----------------------+
 
 # Function to get all users
-get_all_users <- function() {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
+user_get_all <- function(req) {
+  user_type <- tryCatch(
+    get_user_type_from_req(req),
+    error = function(e) return(NULL)
+  )
 
-  users <- dbReadTable(con, "user_data")
-  return(users)
+  if (is.null(user_type) || user_type != "admin") {
+    return(list(
+      status = "unauthorized",
+      message = "To retrieve all user info, you must be an administrator",
+      data = list(users = NULL)
+    ))
+  }
+
+  users <- tryCatch(
+    get_all_users(),
+    error = function(e) {
+      return(list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message),
+        data = list(users = NULL)
+      ))
+    }
+  )
+
+  if (!is.data.frame(users) || nrow(users) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There are no users in the database",
+      data = list(users = NULL)
+    ))
+  }
+
+  list(
+    status = "success",
+    message = "All users successfully retrieved",
+    data = list(users = users)
+  )
 }
+
+# +-----------------------+
+# |       GET TYPE        |
+# +-----------------------+
+
+user_get_type <- function(req) {
+  tryCatch(
+    {
+      user_type <- get_user_type_from_req(req)
+
+      if (!is.data.frame(user_type) || nrow(user_type) == 0) {
+        return(list(
+          status = "not_found",
+          message = "There are no users in the database that own this token",
+          data = list(user_type = NULL)
+        ))
+      }
+
+      list(
+        status = "success",
+        message = "User type successfully retrieved",
+        data = list(user_type = user_type)
+      )
+    },
+    error = function(e) {
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message),
+        data = list(user_type = NULL)
+      )
+    }
+  )
+}
+
+# +-----------------------+
+# |          GET          |
+# +-----------------------+
 
 # Function to get a user by ID
-get_user_by_id <- function(id) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  query <- "SELECT * FROM user_data WHERE id_user = $1"
-  user <- dbGetQuery(con, query, params = list(id))
-
-  if (nrow(user) == 0) {
-    return(list(status = "error", message = "User not found"))
+user_get_with_id <- function(req, id_user) {
+  if (is_invalid_utf8(id_user) || !UUIDvalidate(id_user)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid user ID",
+      data = list(user = NULL)
+    ))
   }
 
-  return(user)
-}
+  user_type <- tryCatch(
+    get_user_type_from_req(req),
+    error = function(e) return(NULL)
+  )
 
-# Function to update a user by ID
-update_user_by_id <- function(id, name = NULL, email = NULL) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  # Check if user exists
-  user_check <- dbGetQuery(con, "SELECT * FROM user_data WHERE id_user = $1", params = list(id))
-
-  if (nrow(user_check) == 0) {
-    return(list(status = "error", message = "User not found"))
+  if (is.null(user_type) || user_type != "admin") {
+    return(list(
+      status = "unauthorized",
+      message = "Retrieving user information that does not belong to you requires administrative privileges. To access your own data, use a different endpoint",
+      data = list(user = NULL)
+    ))
   }
 
-  updates <- c()
-
-  if (!is.null(name)) updates <- c(updates, sprintf("name = '%s'", name))
-
-  if (!is.null(email)) {
-    # Check for unique email
-    existing_user <- dbGetQuery(con, "SELECT * FROM user_data WHERE email = $1 AND id_user != $2", params = list(email, id))
-    if (nrow(existing_user) > 0) {
-      return(list(status = "error", message = "Email already exists"))
+  user <- tryCatch(
+    get_user_by_id(id_user),
+    error = function(e) {
+      return(list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message),
+        data = list(user = NULL)
+      ))
     }
-    updates <- c(updates, sprintf("email = '%s'", email))
+  )
+
+  if (!is.data.frame(user) || nrow(user) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There are no user with this id in the database",
+      data = list(user = NULL)
+    ))
   }
 
-  if (length(updates) > 0) {
-    update_query <- paste(updates, collapse = ", ")
-    dbExecute(con, sprintf("UPDATE user_data SET %s WHERE id_user = $1", update_query), params = list(id))
-    return(list(status = "success", message = "User updated successfully"))
-  }
-
-  return(list(status = "error", message = "No fields to update"))
-}
-
-# Function to delete a user by ID
-delete_user_by_id <- function(id) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  existing_user <- dbGetQuery(con, "SELECT * FROM user_data WHERE id_user = $1", params = list(id))
-
-  if (nrow(existing_user) == 0) {
-    return(list(status = "error", message = "User not found"))
-  }
-
-  dbExecute(con, "DELETE FROM user_data WHERE id_user = $1", params = list(id))
-
-  return(list(status = "success", message = "User deleted"))
+  list(
+    status = "success",
+    message = "User successfully retrieved",
+    data = list(user = user)
+  )
 }

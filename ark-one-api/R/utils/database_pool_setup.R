@@ -32,7 +32,7 @@ add_pool <- function(pool_name, drv, db_params) {
     }
   }
 
-  # Cria a nova pool
+  # Create a new pool
   pools_env[[pool_name]] <- dbPool(
     drv = drv,
     dbname = db_params$dbname,
@@ -95,7 +95,7 @@ get_conn <- function(pool_name = "postgres_pool") {
 
 
 
-
+# TODO: Remove after the end of refactor
 # Maintained as reference, will be removed soon
 getConn <- function(dbname = Sys.getenv("DB_NAME"),
                     host = Sys.getenv("DB_HOST"),

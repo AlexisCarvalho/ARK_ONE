@@ -11,34 +11,390 @@
 - **`unauthorized:`** Authentication is required and has failed or has not been provided. REF 401 🔒
 - **`forbidden:`** The server understands the request but refuses to authorize it. REF 403 🚷
 - **`not_found:`** The requested resource could not be found. REF 404 🔍
+- **`conflict`** The request could not be completed due to a conflict with the current state of the target resource. REF 409 ⚠️
 
 ## Server Error Indicators:
 
 - **`internal_server_error:`** An unexpected condition was encountered on the server. REF 500 💥
 - **`service_unavailable:`** The server is currently unable to handle the request due to temporary overloading or maintenance. REF 503 🛠️
 
+### Possible responses that may appear (only in development) due to logical errors in all endpoints
+##### 💥 `500` - Status not correctly mapped, may return incorrect http code, so it returns an error as a reminder to check it
+```json
+{
+  "status": "service_unavailable",
+  "message": "Error, status: (misspelled status of response) not mapped"
+}
+```
+
+##### 🛠️ `503` - Service Unavailable or under development
+```json
+{
+  "status": "service_unavailable",
+  "message": "Service Temporary Unavailable due to Maintenance"
+}
+```
+
+# More Information
+## Token duration and roles "user_types" in the system
+|  JWT_Token  | Expiration Time |
+|-------------|-----------------|
+|  `regular`  |    24 Hours     |
+| `moderator` |     1 Hour      |
+|   `admin`   |   30 Minutes    |
+
 
 # Endpoints
 
 ## /Account
 
-### POST /Account/login
-**`Values:`**
+### **POST** `Account/login`
 
-`STRING` *email, password*
+#### Description
+This endpoint is designated for user login where the user receives a token that authorizes access to the system for a limited time.
 
-**`Return:`**
+#### Parameters
+| Parameter  | Type   | Required | Description                                       |
+|------------|--------|----------|---------------------------------------------------|
+| `email`    | String | TRUE     | The email of the registered user                  |
+| `password` | String | TRUE     | The password associated with the registered email |
 
-    200 ✅
-    status = "success", message = "Valid Credentials", token = JWT_Token
+#### Responses
 
-    400 🚫
-    status = "bad_request", message = "Email and Password are Required", token = empty_string
-    status = "bad_request", message = "Invalid Input Type", token = empty_string
-    status = "bad_request", message = "Invalid Email Pattern", token = empty_string
+##### ✅ `200` - Logged successfully, token returned
+```json
+{
+  "status": "success",
+  "message": "Valid Credentials",
+  "data": {
+    "token": "JWT_Token"
+  }
+}
+```
 
-    404 🔍
-    status = "not_found", message = "Invalid Credentials", token = empty_string
-    
-    500 💥
-    status = "error", message = "Unexpected Error: depends_on_the_error", token = empty_string
+##### 🚫 `400` - Required Inputs missing or invalid
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Input Type",
+  "data": {
+    "token": {}
+  }
+}
+
+{
+  "status": "bad_request",
+  "message": "Email and Password are Required",
+  "data": {
+    "token": {}
+  }
+}
+
+{
+  "status": "bad_request",
+  "message": "Invalid Email Pattern",
+  "data": {
+    "token": {}
+  }
+}
+
+{
+  "status": "bad_request",
+  "message": "Invalid Password: Must be ASCII",
+  "data": {
+    "token": {}
+  }
+}
+```
+
+##### 🔍 `404` - User Not Found
+```json
+{
+  "status": "not_found",
+  "message": "Invalid Credentials",
+  "data": {
+    "token": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "token": {}
+  }
+}
+```
+
+---
+### **POST** `Account/register`
+
+#### Description
+This endpoint is used to create a new user account. The user must provide a name, email, password, and optionally a user type.
+
+#### Parameters
+| Parameter   | Type   | Required | Description                                  |
+|-------------|--------|----------|----------------------------------------------|
+| `name`      | String | TRUE     | The name of the user                         |
+| `email`     | String | TRUE     | The email of the user                        |
+| `password`  | String | TRUE     | The password of the user                     |
+| `user_type` | String | FALSE    | The type of user access (default: `regular`) |
+
+#### Responses
+
+##### 🆕 `201` - User successfully registered
+```json
+{
+  "status": "created",
+  "message": "User Registered Successfully",
+}
+```
+
+##### 🚫 `400` - Required Inputs missing or invalid 
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Input Type"
+}
+
+{
+  "status": "bad_request",
+  "message": "All Required Fields must be completed"
+}
+
+{
+  "status": "bad_request",
+  "message": "Email can't exceed 100 characters"
+}
+
+{
+  "status": "bad_request",
+  "message": "Email must be in a valid format (e.g., user@example.com)"
+}
+
+{
+  "status": "bad_request",
+  "message": "Invalid Password: Must be ASCII and below 72 characters"
+}
+
+{
+  "status": "bad_request",
+  "message": "User type must be 'regular', 'admin', or 'moderator'"
+}
+```
+
+##### ⚠️ `409` - Email already registered
+```json
+{
+  "status": "conflict",
+  "message": "Email must be unique. This email is already in use"
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error"
+}
+```
+
+## /Status
+
+### **GET** `Status/ping`
+
+#### Description
+This endpoint is simply to verify in a fast way if the api is running on the called address and port, if not any response will come.
+
+#### Responses
+
+##### ✅ `200` - API Running
+```json
+{
+  "status": "success",
+  "message": "The API is Running"
+}
+```
+
+## /User
+
+### **GET** `User/get_all`
+
+#### Description
+This endpoint is used to get all the users on the system, used mostly for debug, for using it you will need to get an administrator token and have it set on the authorization header.
+
+#### Responses
+
+##### ✅ `200` - Successfully retrieved all users from database
+```json
+{
+  "status": "success",
+  "message": "All users successfully retrieved",
+  "data": {
+    "users": [
+      {
+        "id_user": "UUID",
+        "name": "User_Name",
+        "email": "user@example.com",
+        "password": "Hashed_Password",
+        "user_type": "regular",
+        "registration_date": "0000-00-00 00:00:00"
+      },
+      {
+        "id_user": "UUID",
+        "name": "User_Name",
+        "email": "user@example.com",
+        "password": "Hashed_Password",
+        "user_type": "moderator",
+        "registration_date": "0000-00-00 00:00:00"
+      }
+    ]
+  }
+}
+```
+
+##### 🔒 `401` - Unauthorized, user trying to use the endpoint is not an admin
+```json
+{
+  "status": "unauthorized",
+  "message": "To retrieve all user info, you must be an administrator",
+  "data": {
+    "users": {}
+  }
+}
+```
+
+##### 🔍 `404` - There are no users in the database
+```json
+{
+  "status": "not_found",
+  "message": "There are no users in the database",
+  "data": {
+    "users": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "users": {}
+  }
+}
+```
+
+### **GET** `User/get_type`
+
+#### Description
+This endpoint is used to get the type of the current user sending the request.
+
+#### Responses
+
+##### ✅ `200` - Successfully retrieved all users from database
+```json
+{
+  "status": "success",
+  "message": "User type successfully retrieved",
+  "data": {
+    "user_type": "regular"
+  }
+}
+```
+
+##### 🔍 `404` - There are no users in the database
+```json
+{
+  "status": "not_found",
+  "message": "There are no users in the database that own this token",
+  "data": {
+    "user_type": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "user_type": {}
+  }
+}
+```
+
+### **GET** `User/<id_user>`
+
+#### Description
+This endpoint is used to get information of a specific user on the system, used mostly for debug, for using it you will need to get an administrator token and have it set on the authorization header.
+
+#### Responses
+
+##### ✅ `200` - Successfully retrieved the user from database
+```json
+{
+  "status": "success",
+  "message": "User successfully retrieved",
+  "data": {
+    "user": [
+      {
+        "name": "User_Name",
+        "email": "user@example.com",
+        "password": "Hashed_Password",
+        "user_type": "regular",
+        "registration_date": "0000-00-00 00:00:00"
+      }
+    ]
+  }
+}
+```
+
+##### 🚫 `400` - Required Inputs missing or invalid
+```json
+{
+  "status": "bad_request",
+  "message": "Missing or Invalid user ID",
+  "data": {
+    "user": {}
+  }
+}
+```
+
+##### 🔒 `401` - Unauthorized, user trying to use the endpoint is not an admin
+```json
+{
+  "status": "unauthorized",
+  "message": "Retrieving user information that does not belong to you requires administrative privileges. To access your own data, use a different endpoint",
+  "data": {
+    "user": {}
+  }
+}
+```
+
+##### 🔍 `404` - UUID Not found on the database
+```json
+{
+  "status": "not_found",
+  "message": "There are no user with this id in the database",
+  "data": {
+    "user": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "user": {}
+  }
+}
+```
