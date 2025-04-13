@@ -1,4 +1,6 @@
-source("utils.R", chdir = TRUE)
+source("request_handler.R", chdir = TRUE)
+source("response_handler.R", chdir = TRUE)
+source("token_handler.R", chdir = TRUE)
 
 authenticate <- function(req, res) {
   if (grepl("/__swagger__/", req$PATH_INFO)) {

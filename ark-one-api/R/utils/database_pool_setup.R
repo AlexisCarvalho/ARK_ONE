@@ -1,3 +1,5 @@
+pools_env <- get("pools_env", envir = .GlobalEnv)
+
 # Function to check if a pool is still valid
 is_pool_active <- function(pool) {
   if (is.null(pool)) {
@@ -43,17 +45,6 @@ add_pool <- function(pool_name, drv, db_params) {
   )
 
   return(pools_env[[pool_name]])
-}
-
-# Function to close all pools before shutting down
-close_all_pools <- function() {
-  if (exists("pools_env", envir = globalenv())) {
-    for (pool_name in ls(pools_env)) {
-      poolClose(pools_env[[pool_name]])
-      rm(list = pool_name, envir = pools_env)
-    }
-    message("All database pools have been closed.")
-  }
 }
 
 # Return the pool if it exists if not send a message for debug

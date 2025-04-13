@@ -6,6 +6,7 @@
 
 source("../services/solar_panel_service.R", chdir = TRUE)
 source("../services/location_data_service.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 #* Stores the values entered with the treatment of the data and the proper analysis of their fluctuation
 #* @response 200 Data Received
@@ -23,32 +24,7 @@ source("../services/location_data_service.R", chdir = TRUE)
 #* @param current current
 #* @post /send_data/solar_panel
 function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current){
-  tryCatch({
-    servo_tower_angle <- as.numeric(servo_tower_angle)
-    solar_panel_temperature <- as.numeric(solar_panel_temperature)
-    esp32_core_temperature <- as.numeric(esp32_core_temperature)
-    voltage <- as.numeric(voltage)
-    current <- as.numeric(current)
-    
-    if (is.na(esp32_unique_id) || is.na(voltage) || is.na(current) || is.na(servo_tower_angle) || is.na(solar_panel_temperature) || is.na(esp32_core_temperature)) {
-      return(list(status = "error", message = "Null values are not permitted"))
-    }
-    
-    response <- save_incoming_solar_panel_data(esp32_unique_id, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current)
-    
-    if(response$status == "success")
-    {
-      res$status <- 200
-      return(response)
-    } else
-    {
-      res$status <- 404
-      return(response)
-    }
-  }, error = function(e) {
-    res$status <- 500
-    return(list(error = e$message))
-  })
+  send_http_response(res, send_data_solar_panel(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current))
 }
 
 #* @tag ESP32_DataEntry

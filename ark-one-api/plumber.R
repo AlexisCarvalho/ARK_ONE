@@ -15,7 +15,7 @@ readRenviron(".Renviron")
 
 source("R/utils/libraries.R", chdir = TRUE)
 source("R/utils/env_setup.R", chdir = TRUE)
-source("R/utils/auth-filter.R", chdir = TRUE)
+source("R/utils/auth_filter.R", chdir = TRUE)
 source("R/utils/database_pool_setup.R", chdir = TRUE)
 
 # +-------------------------------------+
@@ -39,7 +39,7 @@ pr <- pr %>%
     plumber::forward()
   }) %>%
   pr_hook("exit", function() {
-    close_all_pools()
+    clear_all_environments()
   })
 
 # +-------------------------------------+
@@ -50,16 +50,16 @@ pr <- pr %>%
 route_paths <- c(
   account = "R/controllers/account.R",
   analytics = "R/controllers/analytics.R",
-  anomaly_detection = "R/controllers/anomaly-detection.R",
-  category = "R/controllers/category.R",
-  esp32_data_entry = "R/controllers/esp32-data-entry.R",
-  location = "R/controllers/location.R",
+  anomaly_detection = "R/controllers/anomaly_detection.R",
+  categories = "R/controllers/categories.R",
+  esp32_data_entry = "R/controllers/esp32_data_entry.R",
+  locations = "R/controllers/locations.R",
   products = "R/controllers/products.R",
-  solar_cell = "R/controllers/solar-cell.R",
+  solar_cell = "R/controllers/solar_cell.R",
   statistics = "R/controllers/statistics.R",
   status = "R/controllers/status.R",
-  time_series = "R/controllers/time-series.R",
-  user = "R/controllers/user.R"
+  time_series = "R/controllers/time_series.R",
+  users = "R/controllers/users.R"
 )
 
 # Create a named list of routers
@@ -72,7 +72,7 @@ routers <- setNames(lapply(route_paths, plumber::plumb), names(route_paths))
 # Apply authentication filter only to specific routers
 routers$anomaly_detection <- routers$anomaly_detection %>%
   pr_filter("authenticate", authenticate)
-routers$user <- routers$user %>%
+routers$users <- routers$users %>%
   pr_filter("authenticate", authenticate)
 routers$solar_cell <- routers$solar_cell %>%
   pr_filter("authenticate", authenticate)
@@ -80,20 +80,22 @@ routers$statistics <- routers$statistics %>%
   pr_filter("authenticate", authenticate)
 routers$time_series <- routers$time_series %>%
   pr_filter("authenticate", authenticate)
+routers$products <- routers$products %>%
+  pr_filter("authenticate", authenticate)
 
 # +-------------------------------------+
 # |        MOUNTING ENDPOINTS           |
 # +-------------------------------------+
 
 pr$mount("/Account", routers$account)                      # No authentication required
+pr$mount("/Users", routers$users)                          # Requires authentication
+pr$mount("/Products", routers$products)                    # No authentication required
 pr$mount("/Anomaly_Detection", routers$anomaly_detection)  # Requires authentication
-pr$mount("/User", routers$user)                            # Requires authentication
 pr$mount("/Solar_Cell", routers$solar_cell)                # Requires authentication
 pr$mount("/Statistics", routers$statistics)                # Requires authentication
 pr$mount("/Time_Series", routers$time_series)              # Requires authentication
-pr$mount("/Category", routers$category)                    # No authentication required
-pr$mount("/Location", routers$location)                    # No authentication required
-pr$mount("/Products", routers$products)                    # No authentication required
+pr$mount("/Categories", routers$categories)                  # No authentication required
+pr$mount("/Locations", routers$locations)                    # No authentication required
 pr$mount("/Analytics", routers$analytics)                  # No authentication required
 pr$mount("/ESP32_DataEntry", routers$esp32_data_entry)     # No authentication required
 pr$mount("/Status", routers$status)                        # No authentication required

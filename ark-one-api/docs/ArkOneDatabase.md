@@ -40,7 +40,7 @@ Stores user data.
 - `name` (VARCHAR(100), NOT NULL)
 - `email` (VARCHAR(100), UNIQUE, NOT NULL)
 - `password` (VARCHAR(60), NOT NULL)
-- `user_type` (VARCHAR(20), DEFAULT 'regular', CHECK `('regular', 'admin', 'moderator')`)
+- `user_role` (VARCHAR(20), DEFAULT 'moderator', CHECK `('analyst', 'moderator', 'admin')`)
 - `registration_date` (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
 
 ---
@@ -166,11 +166,11 @@ This table summarizes the effect of record deletion across different tables:
 
 ---
 
-**`chk_user_type_pd_values`**
+**`chk_user_role_pd_values`**
 
 - ***Table:*** user_data
-- **Column:** `user_type`  
-- ***Description:*** Ensures that the `user_type` column only contains one of the predefined values: 'regular', 'admin', or 'moderator'.
+- **Column:** `user_role`  
+- ***Description:*** Ensures that the `user_role` column only contains one of the predefined values: 'analyst', 'moderator', or 'admin'.
 - ***Effect:*** Prevents invalid user roles from being inserted.
 
 ---
@@ -190,6 +190,15 @@ This table summarizes the effect of record deletion across different tables:
 - **Columns:** `latitude` `longitude`  
 - ***Description:*** Ensures that both `latitude` and `longitude` are either provided together as valid coordinates or left NULL together. It verifies too if latitude is in between -90 AND 90 as well if longitude is between -180 and 180
 - ***Effect:*** Prevents inconsistent location data (e.g., having a latitude without a longitude or invalid values).
+
+---
+
+**`chk_analyst_not_owner`**
+
+- ***Table:*** user_affiliations
+- **Columns:** `id_analyst` `id_owner`  
+- ***Description:*** Ensures that both `id_analyst` and `id_owner` are provided with different users
+- ***Effect:*** Prevents inconsistent hierarchy between users where an owner can be an analyst of his own data
 
 ### 🔹 UNIQUE Constraints
 
@@ -284,6 +293,13 @@ This table summarizes the effect of record deletion across different tables:
 - **Description:** Ensures that the relationship between users and products is unique.  
 - **Effect:** Since the primary key is composed of `(id_user, id_product)`, it prevents the same user from having a product listed more than once in the table.  
 
+---
+
+### **`user_affiliations_pkey`**  
+- **Table:** `user_products`  
+- **Description:** Ensures that the relationship between different users is unique.  
+- **Effect:** Since the primary key is composed of `(id_analyst, id_owner)`, it prevents the same analyst to be affiliated to a owner of data more than once in the table. 
+
 ### 🔹 FOREIGN KEY Violations
 
 ---
@@ -349,3 +365,15 @@ This table summarizes the effect of record deletion across different tables:
 - **References:** `products(id_product)`  
 - **Description:** Ensures that each entry in `user_products` has a valid product.  
 - **Effect:** Prevents records of products that do not exist in the `products` table.  
+
+### **`fk_user_affiliations_analyst_to_user`**  
+- **Table:** `user_affiliations`  
+- **References:** `user_data(id_user)`  
+- **Description:** Ensures that each entry in `id_analyst` has a valid user.  
+- **Effect:** Prevents records of users that do not exist in the `user_data` table.  
+
+### **`fk_user_affiliations_owner_to_user`**  
+- **Table:** `user_affiliations`  
+- **References:** `user_data(id_user)`  
+- **Description:** Ensures that each entry in `id_owner` has a valid user.  
+- **Effect:** Prevents records of users that do not exist in the `user_data` table.  

@@ -36,10 +36,10 @@
 ```
 
 # More Information
-## Token duration and roles "user_types" in the system
+## Token duration and roles "user_roles" in the system
 |  JWT_Token  | Expiration Time |
 |-------------|-----------------|
-|  `regular`  |    24 Hours     |
+|  `analyst`  |    24 Hours     |
 | `moderator` |     1 Hour      |
 |   `admin`   |   30 Minutes    |
 
@@ -133,15 +133,15 @@ This endpoint is designated for user login where the user receives a token that 
 ### **POST** `Account/register`
 
 #### Description
-This endpoint is used to create a new user account. The user must provide a name, email, password, and optionally a user type.
+This endpoint is used to create a new user account. The user must provide a name, email, password, and optionally a user role.
 
 #### Parameters
-| Parameter   | Type   | Required | Description                                  |
-|-------------|--------|----------|----------------------------------------------|
-| `name`      | String | TRUE     | The name of the user                         |
-| `email`     | String | TRUE     | The email of the user                        |
-| `password`  | String | TRUE     | The password of the user                     |
-| `user_type` | String | FALSE    | The type of user access (default: `regular`) |
+| Parameter   | Type   | Required | Description                                    |
+|-------------|--------|----------|------------------------------------------------|
+| `name`      | String | TRUE     | The name of the user                           |
+| `email`     | String | TRUE     | The email of the user                          |
+| `password`  | String | TRUE     | The password of the user                       |
+| `user_role` | String | FALSE    | The type of user access (default: `moderator`) |
 
 #### Responses
 
@@ -182,7 +182,7 @@ This endpoint is used to create a new user account. The user must provide a name
 
 {
   "status": "bad_request",
-  "message": "User type must be 'regular', 'admin', or 'moderator'"
+  "message": "User role must be 'analyst', 'moderator', or 'admin'"
 }
 ```
 
@@ -219,9 +219,9 @@ This endpoint is simply to verify in a fast way if the api is running on the cal
 }
 ```
 
-## /User
+## /Users
 
-### **GET** `User/get_all`
+### **GET** `Users/get_all`
 
 #### Description
 This endpoint is used to get all the users on the system, used mostly for debug, for using it you will need to get an administrator token and have it set on the authorization header.
@@ -240,7 +240,7 @@ This endpoint is used to get all the users on the system, used mostly for debug,
         "name": "User_Name",
         "email": "user@example.com",
         "password": "Hashed_Password",
-        "user_type": "regular",
+        "user_role": "analyst",
         "registration_date": "0000-00-00 00:00:00"
       },
       {
@@ -248,7 +248,7 @@ This endpoint is used to get all the users on the system, used mostly for debug,
         "name": "User_Name",
         "email": "user@example.com",
         "password": "Hashed_Password",
-        "user_type": "moderator",
+        "user_role": "moderator",
         "registration_date": "0000-00-00 00:00:00"
       }
     ]
@@ -289,10 +289,10 @@ This endpoint is used to get all the users on the system, used mostly for debug,
 }
 ```
 
-### **GET** `User/get_type`
+### **GET** `Users/get_role`
 
 #### Description
-This endpoint is used to get the type of the current user sending the request.
+This endpoint is used to get the role of the current user sending the request.
 
 #### Responses
 
@@ -300,9 +300,9 @@ This endpoint is used to get the type of the current user sending the request.
 ```json
 {
   "status": "success",
-  "message": "User type successfully retrieved",
+  "message": "User role successfully retrieved",
   "data": {
-    "user_type": "regular"
+    "user_role": "analyst"
   }
 }
 ```
@@ -313,7 +313,7 @@ This endpoint is used to get the type of the current user sending the request.
   "status": "not_found",
   "message": "There are no users in the database that own this token",
   "data": {
-    "user_type": {}
+    "user_role": {}
   }
 }
 ```
@@ -324,12 +324,12 @@ This endpoint is used to get the type of the current user sending the request.
   "status": "internal_server_error",
   "message": "Unexpected Error: depends_on_the_error",
   "data": {
-    "user_type": {}
+    "user_role": {}
   }
 }
 ```
 
-### **GET** `User/<id_user>`
+### **GET** `Users/<id_user>`
 
 #### Description
 This endpoint is used to get information of a specific user on the system, used mostly for debug, for using it you will need to get an administrator token and have it set on the authorization header.
@@ -347,7 +347,7 @@ This endpoint is used to get information of a specific user on the system, used 
         "name": "User_Name",
         "email": "user@example.com",
         "password": "Hashed_Password",
-        "user_type": "regular",
+        "user_role": "analyst",
         "registration_date": "0000-00-00 00:00:00"
       }
     ]

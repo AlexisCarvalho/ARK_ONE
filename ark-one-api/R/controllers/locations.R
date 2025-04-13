@@ -6,7 +6,7 @@
 
 source("../services/location_data_service.R", chdir = TRUE)
 
-#* @tag Location
+#* @tag Locations
 #* @param esp32_unique_id 
 #* @get /get_location
 function(res, esp32_unique_id) {
@@ -51,7 +51,7 @@ function(res, esp32_unique_id) {
 #* @param id_product_instance The ID of the product instance
 #* @param latitude Latitude of the location
 #* @param longitude Longitude of the location
-#* @tag Location
+#* @tag Locations
 #* @post /set
 #* @response 201 Created if location data is successfully created
 #* @response 400 Bad Request if product instance does not exist
@@ -104,7 +104,7 @@ function(res, id_product_instance, latitude, longitude) {
 }
 
 #* Get all location data
-#* @tag Location
+#* @tag Locations
 #* @get /get_all
 #* @response 200 Returns a list of all location data
 #* @response 500 Internal Server Error if there is an issue retrieving location data
@@ -119,7 +119,7 @@ function() {
 
 #* Get location data by ID
 #* @param id The ID of the location data to retrieve
-#* @tag Location
+#* @tag Locations
 #* @get /<id>
 #* @response 200 Returns the details of the specified location data
 #* @response 404 Not Found if the location data does not exist
@@ -147,7 +147,7 @@ function(id) {
 
 #* Delete a location by ID
 #* @param id The ID of the location data to delete
-#* @tag Location
+#* @tag Locations
 #* @delete /<id>
 #* @response 200 OK if the location data was successfully deleted
 #* @response 404 Not Found if the location data does not exist

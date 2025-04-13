@@ -1,39 +1,38 @@
 # +-----------------------+
 # |                       |
-# |         USER          |
+# |         USERS         |
 # |                       |
 # +-----------------------+
 
 source("../services/user_service.R", chdir = TRUE)
-source("../services/product_service.R", chdir = TRUE)
-source("../utils/utils.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 #* Get all users
-#* @tag User
-#* @get /get_all
+#* @tag Users
+#* @get /all
 #* @response 200 Returns a list of all users
 #* @response 500 Internal Server Error
-function(req, res) {
-  send_http_response(res, user_get_all(req))
+function(res, req) {
+  send_http_response(res, get_users_all(req))
 }
 
-#* Get the type of the user
-#* @tag User
-#* @get /get_type
-#* @response 200 Returns the type of the specified user
+#* Get the role of the user
+#* @tag Users
+#* @get /role
+#* @response 200 Returns the role of the specified user
 #* @response 404 Not Found if the user does not exist
 #* @response 500 Internal Server Error
-function(req, res) {
-  send_http_response(res, user_get_type(req))
+function(res, req) {
+  send_http_response(res, get_users_role(req))
 }
 
 #* Get a user by ID
 #* @param id The ID of the user to retrieve
-#* @tag User
+#* @tag Users
 #* @get /<id_user>
 #* @response 200 Returns the details of the specified user
 #* @response 404 Not Found if the user does not exist
 #* @response 500 Internal Server Error
-function(req, res, id_user) {
-  send_http_response(res, user_get_with_id(req, id_user))
+function(res, req, id_user) {
+  send_http_response(res, get_users_with_id(req, id_user))
 }

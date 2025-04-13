@@ -10,19 +10,19 @@ source("../services/category_service.R", chdir = TRUE)
 #* @param category_name The name of the category
 #* @param category_description The description of the category
 #* @param id_father_category The ID of the parent category (optional)
-#* @tag Category
+#* @tag Categories
 #* @post /create
-function(res, category_name, category_description, id_father_category = 0) {
+function(res, category_name, category_description, id_father_category = NA) {
   tryCatch({
     if (missing(category_name) || missing(category_description)) {
      res$status <- 400
      return(list(status = "error", message = "Missing required parameters: category_name or category_description"))
     }
   
-    if (id_father_category == 0 || is.null(id_father_category)) {
+    if (is.na(id_father_category) || is.null(id_father_category)) {
       id_father_category <- NULL
     } else {
-      id_father_category <- as.numeric(id_father_category)
+      id_father_category <- id_father_category
     }
   
     result <- future::value(future::future({
@@ -37,7 +37,7 @@ function(res, category_name, category_description, id_father_category = 0) {
 }
 
 #* Get all categories
-#* @tag Category
+#* @tag Categories
 #* @get /get_all
 #* @response 200 Returns a list of all categories
 #* @response 500 Internal Server Error if there is an issue retrieving categories
@@ -54,7 +54,7 @@ function() {
 
 #* Get a category by ID
 #* @param id The ID of the category to retrieve
-#* @tag Category
+#* @tag Categories
 #* @get /<id>
 #* @response 200 Returns the details of the specified category
 #* @response 404 Not Found if the category does not exist
@@ -85,7 +85,7 @@ function(id) {
 #* @param category_name New name for the category (optional)
 #* @param category_description New description for the category (optional)
 #* @param id_father_category New parent category ID (optional)
-#* @tag Category
+#* @tag Categories
 #* @put /<id>
 #* @response 200 OK if the category was successfully updated
 #* @response 400 Bad Request if no fields are provided to update or if the ID is invalid
@@ -114,7 +114,7 @@ function(id, category_name, category_description, id_father_category) {
 
 #* Delete a category by ID
 #* @param id The ID of the category to delete
-#* @tag Category
+#* @tag Categories
 #* @delete /<id>
 #* @response 200 OK if the category was successfully deleted
 #* @response 404 Not Found if the category does not exist

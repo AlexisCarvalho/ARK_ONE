@@ -1,4 +1,14 @@
-source("database_pool_setup.R", chdir = TRUE)
+# Initialize esp32_data_storage, that is used to store esp32 data
+if (!exists("esp32_data_storage", envir = .GlobalEnv)) {
+  esp32_data_storage <- new.env(parent = .GlobalEnv)
+  assign("esp32_data_storage", esp32_data_storage, envir = .GlobalEnv)
+}
+
+# Initialize esp32_metadata, that is used to store esp32 data
+if (!exists("esp32_metadata", envir = .GlobalEnv)) {
+  esp32_metadata <- new.env(parent = .GlobalEnv)
+  assign("esp32_metadata", esp32_metadata, envir = .GlobalEnv)
+}
 
 # Initialize pools_env, that is used to store connection pools
 if (!exists("pools_env", envir = .GlobalEnv)) {
@@ -24,9 +34,9 @@ if (!exists("status_env", envir = .GlobalEnv)) {
 
   status_env$constraint_violation_map <- list(
     # Check
-    chk_user_type_pd_values = list(
+    chk_user_role_pd_values = list(
       status = "bad_request",
-      message = "User type must be 'regular', 'admin', or 'moderator'"
+      message = "User role must be 'analyst', 'moderator', or 'admin'"
     ),
     chk_valid_email = list(
       status = "bad_request",
@@ -35,6 +45,10 @@ if (!exists("status_env", envir = .GlobalEnv)) {
     chk_location_coordinates = list(
       status = "bad_request",
       message = "Latitude and longitude must be provided together or left NULL, this could be triggered too if latitude aren't in between -90 AND 90 as well if longitude aren't in between -180 and 180"
+    ),
+    chk_analyst_not_owner = list(
+      status = "bad_request",
+      message = "id_analyst and id_owner must be provided with different users"
     ),
     # Unique
     user_data_email_key = list(
@@ -83,8 +97,12 @@ if (!exists("status_env", envir = .GlobalEnv)) {
       message = "ESP32 Data ID must be unique"
     ),
     user_products_pkey = list(
-      status = "internal_server_error",
+      status = "bad_request",
       message = "Each user-product association must be unique"
+    ),
+    user_affiliations_pkey = list(
+      status = "bad_request",
+      message = "Each analyst-owner association must be unique"
     ),
     # Foreign Key
     fk_category_parent = list(
@@ -118,11 +136,25 @@ if (!exists("status_env", envir = .GlobalEnv)) {
     fk_user_products_to_products = list(
       status = "bad_request",
       message = "User-product association must reference a valid product"
+    ),
+    fk_user_affiliations_analyst_to_user = list(
+      status = "bad_request",
+      message = "User_affiliations analyst must reference a valid user"
+    ),
+    fk_user_affiliations_owner_to_user = list(
+      status = "bad_request",
+      message = "User_affiliations owner must reference a valid user"
     )
   )
 
   assign("status_env", status_env, envir = .GlobalEnv)
 }
+
+# +--------------------------------------+
+# |  INITIAL SCRIPT AND CLOSE FUNCTIONS  |
+# +--------------------------------------+
+
+source("database_pool_setup.R", chdir = TRUE)
 
 # Starting the connection with the database using a connection pool
 add_pool(
@@ -136,3 +168,44 @@ add_pool(
     password = Sys.getenv("DB_PASSWORD")
   )
 )
+
+clear_all_environments <- function() {
+  if (exists("esp32_data_storage", envir = .GlobalEnv)) {
+    esp32_data_storage <- get("esp32_data_storage", envir = .GlobalEnv)
+    rm(list = ls(envir = esp32_data_storage), envir = esp32_data_storage)
+    rm(esp32_data_storage, envir = .GlobalEnv)
+  }
+
+  if (exists("esp32_metadata", envir = .GlobalEnv)) {
+    esp32_metadata <- get("esp32_metadata", envir = .GlobalEnv)
+    rm(list = ls(envir = esp32_metadata), envir = esp32_metadata)
+    rm(esp32_metadata, envir = .GlobalEnv)
+  }
+
+  if (exists("pools_env", envir = .GlobalEnv)) {
+    pools_env <- get("pools_env", envir = .GlobalEnv)
+    pool_names <- ls(pools_env)
+
+    for (pool_name in pool_names) {
+      tryCatch({
+        poolClose(pools_env[[pool_name]])
+      }, error = function(e) {
+        message(sprintf("Erro ao fechar pool '%s': %s", pool_name, e$message))
+      })
+    }
+
+    message("All database pools have been closed.")
+
+    rm(list = pool_names, envir = pools_env)
+    rm(pools_env, envir = .GlobalEnv)
+  }
+
+  if (exists("status_env", envir = .GlobalEnv)) {
+    status_env <- get("status_env", envir = .GlobalEnv)
+    rm(list = ls(envir = status_env), envir = status_env)
+    rm(status_env, envir = .GlobalEnv)
+  }
+
+  gc()  # Garbage Collector Call for cleaning the memory
+  message("All environments and variables are cleaned")
+}

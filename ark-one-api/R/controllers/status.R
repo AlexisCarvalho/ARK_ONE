@@ -5,7 +5,7 @@
 # +-----------------+
 
 source("../services/status_service.R", chdir = TRUE)
-source("../utils/utils.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 #* Verifies the current state of the API
 #* @get /ping
@@ -22,5 +22,5 @@ function(res) {
 #* @description Endpoint is designated to peek on the values that will be sended to the database once the query threshold is filled.
 #* @tag Status
 function(res) {
-  send_http_response(res, status_solar_panel_values())
+  send_http_response(res, maintenance_message())
 }

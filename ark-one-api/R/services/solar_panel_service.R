@@ -5,121 +5,173 @@
 # +-------------------------------------+
 
 source("../models/solar_panel_model.R", chdir = TRUE)
+source("../utils/utils.R", chdir = TRUE)
 
-recently_received_solar_panel_data <- data.table(id_product_instance = numeric(),
-                                                 voltage = numeric(),
-                                                 current = numeric(),
-                                                 servo_tower_angle = numeric(),
-                                                 solar_panel_temperature = numeric(),
-                                                 esp32_core_temperature = numeric())
-solar_panel_data_to_query <- data.table(id_product_instance = numeric(),
-                                        voltage = numeric(),
-                                        current = numeric(),
-                                        servo_tower_angle = numeric(),
-                                        solar_panel_temperature = numeric(),
-                                        esp32_core_temperature = numeric())
+esp32_data_storage <- get("esp32_data_storage", envir = .GlobalEnv)
+esp32_metadata <- get("esp32_metadata", envir = .GlobalEnv)
 
-# +----------------------------+
-# |   SOLAR PANEL DATA ENTRY   |
-# +----------------------------+
+# Only the data associated to the key is wiped
+delete_esp32_data_from_memory <- function(esp32_unique_id) {
+  if (exists(as.character(esp32_unique_id), envir = esp32_data_storage)) {
+    dt <- get(as.character(esp32_unique_id), envir = esp32_data_storage)
+    assign(as.character(esp32_unique_id), dt[0], envir = esp32_data_storage)
 
-query_threshold <- 10
-count_solar_panel_insertions <- 0
-solar_panel_new_data_to_query <- FALSE
+    message(sprintf("Os dados do dispositivo %s foram apagados, mas a chave foi mantida.", esp32_unique_id))
+  } else {
+    message("Chave não encontrada.")
+  }
 
-bulk_insert_solar_panel_values <- function(solar_panel_data_to_query) 
-{
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  tryCatch({
-    if (is.null(con))
-    {
-      stop("Failed to connect to the database.")
-    }
-
-    if (nrow(solar_panel_data_to_query) == 0) 
-    {
-      stop("solar_panel_data_to_query is empty, nothing to write.")
-    }
-
-    values_list <- apply(solar_panel_data_to_query, 1, function(row) {
-      common_data <- toJSON(list(voltage = row['voltage'], current = row['current']), auto_unbox = TRUE)
-      product_specific_data <- toJSON(list(servo_tower_angle = row['servo_tower_angle'], 
-                                           solar_panel_temperature = row['solar_panel_temperature'], 
-                                           esp32_core_temperature = row['esp32_core_temperature']), auto_unbox = TRUE)
-
-      sprintf("('%s', '%s', '%s')", row['id_product_instance'], common_data, product_specific_data)
-    })
-
-    values_string <- paste(values_list, collapse = ", ")
-
-    query <- sprintf("INSERT INTO esp32_data (id_product_instance, common_data, product_specific_data) VALUES %s", values_string)
-
-    dbExecute(con, query)
-
-    return(TRUE)
-  }, error = function(e)
-  {
-    message(paste("Error writing to database:", e$message))
-    return(FALSE)
-  })
+  # Only reset the counter, id_product_instance are not erased
+  # because the esp32 was not deleted from database, still uses the same instance
+  if (exists(as.character(esp32_unique_id), envir = esp32_metadata)) {
+    metadata <- get(as.character(esp32_unique_id), envir = esp32_metadata)
+    metadata$insert_count <- 0
+    assign(as.character(esp32_unique_id), metadata, envir = esp32_metadata)
+  }
 }
 
-# +-----------------------------------+
-# |   SOLAR PANEL DATA MANIPULATION   |
-# +-----------------------------------+
-
-save_incoming_solar_panel_data <- function(esp32_unique_id, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  query <- "SELECT id_product_instance FROM product_instance WHERE esp32_unique_id = $1"
-
-  id_product_instance <- dbGetQuery(con, query, params = list(esp32_unique_id))
-
-  if (nrow(id_product_instance) == 0) {
-    return(list(status = "error", message = "No product found for the given esp32_unique_id."))
+# The key the data and the metadata is erased
+delete_esp32_from_memory <- function(esp32_unique_id) {
+  if (exists(as.character(esp32_unique_id), envir = esp32_data_storage)) {
+    rm(list = as.character(esp32_unique_id), envir = esp32_data_storage)
+    rm(list = as.character(esp32_unique_id), envir = esp32_metadata)
+    message(sprintf("Os dados do dispositivo %s foram removidos.", esp32_unique_id))
+  } else {
+    message("Chave não encontrada.")
   }
+}
 
-  id_product_instance <- id_product_instance$id_product_instance[1]
+# Get all esp32 data of the environment
+get_all_data <- function() {
+  keys <- ls(envir = esp32_data_storage)
+  all_data <- lapply(keys, function(key) {
+    data <- get(key, envir = esp32_data_storage)
+    list(id = key, data = data)
+  })
+  return(all_data)
+}
 
-  recently_received_solar_panel_data <<- rbind(recently_received_solar_panel_data, 
-                                               data.table(id_product_instance = id_product_instance,
-                                                          voltage = voltage,
-                                                          current = current,
-                                                          servo_tower_angle = servo_tower_angle,
-                                                          solar_panel_temperature = solar_panel_temperature,
-                                                          esp32_core_temperature = esp32_core_temperature))
-
-  if (nrow(recently_received_solar_panel_data) > query_threshold) {
-    recently_received_solar_panel_data <<- recently_received_solar_panel_data[-1, ]
-  }
-
-  count_solar_panel_insertions <<- count_solar_panel_insertions + 1
-
-  if (count_solar_panel_insertions == query_threshold) {
-    if (solar_panel_new_data_to_query == FALSE) {
-      move_to_solar_panel_data_to_query()
-      solar_panel_new_data_to_query <<- TRUE
+# Save the information of the recognizable esp32 on the database
+save_to_database <- function(esp32_unique_id, dt, metadata) {
+  if (is.null(metadata$id_product_instance)) {
+    id_product_instance <- tryCatch(
+      fetch_product_instance(esp32_unique_id),
+      error = function(e) return(NULL)
+    )
+    if (!is.null(id_product_instance) && nrow(id_product_instance) > 0) {
+      metadata$id_product_instance <- id_product_instance$id_product_instance[1]
+      assign(as.character(esp32_unique_id), metadata, envir = esp32_metadata)
     } else {
-      stop("*NOT IMPLEMENTED YET* Database fails to receive the data at some point, to prevent data loss it was maintained but numerous new data come and overflow the threshold.")
+      message("Unrecognizable ESP32 Device Blocked")
+      metadata$insert_count <- 0
+      assign(as.character(esp32_unique_id), metadata, envir = esp32_metadata)
+      return()
     }
   }
 
-  if (solar_panel_new_data_to_query == TRUE) {
-    success <- bulk_insert_solar_panel_values(solar_panel_data_to_query)
-    if (success) {
-      solar_panel_new_data_to_query <<- FALSE
-      solar_panel_data_to_query <<- data.table(id_product_instance = numeric(), 
-                                               voltage = numeric(),
-                                               current = numeric(),
-                                               servo_tower_angle = numeric(),
-                                               solar_panel_temperature = numeric(),
-                                               esp32_core_temperature = numeric())
-    } else {
-      stop("*NOT IMPLEMENTED YET* Database fails to receive the data. Retry feature in development")
-    }
+  dt_copy <- copy(dt)
+  dt_copy[, id_product_instance := metadata$id_product_instance]
+
+  message(sprintf("Salvando dados do dispositivo %s no banco de dados...", esp32_unique_id))
+
+  result <- tryCatch(
+    bulk_insert_solar_panel_values(dt_copy),
+    error = function(e) return(NULL)
+  )
+
+  if (is.null(result)) {
+    message("Error Inserting")
   }
-  return(list(status = "success", message = "Success Receiving Data"))
+
+  metadata$insert_count <- 0
+  assign(as.character(esp32_unique_id), metadata, envir = esp32_metadata)
+}
+
+insert_data <- function(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current) {
+  dt <- get(as.character(esp32_unique_id), envir = esp32_data_storage)
+  metadata <- get(as.character(esp32_unique_id), envir = esp32_metadata)
+
+  dt <- rbind(dt, data.table(
+    max_elevation = max_elevation,
+    min_elevation = min_elevation,
+    servo_tower_angle = servo_tower_angle,
+    solar_panel_temperature = solar_panel_temperature,
+    esp32_core_temperature = esp32_core_temperature,
+    voltage = voltage,
+    current = current
+  ))
+
+  if (nrow(dt) > 10) {
+    dt <- dt[-1]
+  }
+
+  metadata$insert_count <- metadata$insert_count + 1
+
+  assign(as.character(esp32_unique_id), dt, envir = esp32_data_storage)
+  assign(as.character(esp32_unique_id), metadata, envir = esp32_metadata)
+
+  if (metadata$insert_count >= 10) {
+    save_to_database(esp32_unique_id, dt, metadata)
+  }
+
+  return(list(
+    status = "success",
+    message = "Successfully Saved ESP32 Data"
+  ))
+}
+
+process_data <- function(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current) {
+  if (!exists(as.character(esp32_unique_id), envir = esp32_data_storage)) {
+    assign(as.character(esp32_unique_id),
+      data.table(
+        max_elevation = numeric(),
+        min_elevation = numeric(),
+        servo_tower_angle = numeric(),
+        solar_panel_temperature = numeric(),
+        esp32_core_temperature = numeric(),
+        voltage = numeric(),
+        current = numeric()
+      ),
+      envir = esp32_data_storage
+    )
+  }
+
+  if (!exists(as.character(esp32_unique_id), envir = esp32_metadata)) {
+    assign(as.character(esp32_unique_id), list(id_product_instance = NULL, insert_count = 0), envir = esp32_metadata)
+  }
+
+  insert_data(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current)
+}
+
+send_data_solar_panel <- function(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current) {
+  if (is_invalid_utf8(esp32_unique_id) || is_blank_string(esp32_unique_id)) {
+    return(list(
+      status = "bad_request",
+      message = "ESP32 ID must be valid, non-empty and UTF-8 string"
+    ))
+  }
+
+  validation_result <- validate_and_convert_numeric_fields(
+    max_elevation = max_elevation,
+    min_elevation = min_elevation,
+    servo_tower_angle = servo_tower_angle,
+    solar_panel_temperature = solar_panel_temperature,
+    esp32_core_temperature = esp32_core_temperature,
+    voltage = voltage,
+    current = current
+  )
+
+  if (validation_result$status == "bad_request") {
+    return(validation_result)
+  } else {
+    max_elevation <- validation_result$data$max_elevation
+    min_elevation <- validation_result$data$min_elevation
+    servo_tower_angle <- validation_result$data$servo_tower_angle
+    solar_panel_temperature <- validation_result$data$solar_panel_temperature
+    esp32_core_temperature <- validation_result$data$esp32_core_temperature
+    voltage <- validation_result$data$voltage
+    current <- validation_result$data$current
+  }
+
+  process_data(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current)
 }

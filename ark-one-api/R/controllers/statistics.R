@@ -4,7 +4,8 @@
 # |                 |
 # +-----------------+
 
-source("../services/solar_panel_service.R", chdir = TRUE)
+source("../services/statistics_service.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 #* Returns an extended summary of descriptive statistics for the Vcc column in T1
 #* @response 200 A detailed statistical summary including mean, median, SD, IQR, skewness, and kurtosis
@@ -15,43 +16,7 @@ source("../services/solar_panel_service.R", chdir = TRUE)
 #* @param id_product_instance
 #* @get /summary
 function(res, id_product_instance) {
-  if (is.null(id_product_instance)) {
-    res$status <- 400
-    return(list(status = "error", message = "The product instance id cannot be null"))
-  }
-  id_product_instance <- as.numeric(id_product_instance)
-
-  response <- get_esp32_data_today(id_product_instance)
-
-  if (nrow(response) == 0) {
-    res$status <- 404
-    return(list(status = "error", message = "Database is empty, no data to analyze."))
-  }
-
-  voltages <- response$voltage
-  currents <- response$current
-  wattages <- voltages * currents
-
-  mean_wattage <- mean(wattages)
-
-  data_summary <- data.frame(
-    MeanVoltages = mean(voltages),
-    MedianVoltages = median(voltages),
-    SDVoltages = sd(voltages),
-    IQRVoltages = IQR(voltages),
-    SkewnessVoltages = skewness(voltages),
-    KurtosisVoltages = kurtosis(voltages),
-    MeanCurrents = mean(currents),
-    MedianCurrents = median(currents),
-    SDCurrent = sd(currents),
-    IQRCurrents = IQR(currents),
-    SkewnessCurrents = skewness(currents),
-    KurtosisCurrents = kurtosis(currents),
-    MeanWattage = mean_wattage
-  )
-
-  res$status <- 200
-  return(list(status = "success", data = data_summary))
+  send_http_response(res, get_esp32_summary_today_by_instance(id_product_instance))
 }
 
 #* Returns the Pearson correlation coefficient between Vcc and Curr columns in T1

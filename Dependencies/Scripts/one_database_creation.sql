@@ -31,14 +31,27 @@ CREATE TABLE user_data (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(60) NOT NULL,
-    user_type VARCHAR(20) DEFAULT 'regular',
+    user_role VARCHAR(20) DEFAULT 'moderator',
     registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 
-    CONSTRAINT chk_user_type_pd_values 
-        CHECK (user_type IN ('regular', 'admin', 'moderator')),
+    CONSTRAINT chk_user_role_pd_values 
+        CHECK (user_role IN ('analyst', 'moderator', 'admin')),
 
     CONSTRAINT chk_valid_email 
         CHECK (email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+);
+
+CREATE TABLE user_affiliations (
+    id_analyst UUID,
+    id_owner UUID,
+
+    PRIMARY KEY (id_analyst, id_owner),
+    CONSTRAINT chk_analyst_not_owner
+        CHECK (id_analyst <> id_owner),
+    CONSTRAINT fk_user_affiliations_analyst_to_user 
+        FOREIGN KEY (id_analyst) REFERENCES user_data(id_user) ON DELETE CASCADE,
+    CONSTRAINT fk_user_affiliations_owner_to_user 
+        FOREIGN KEY (id_owner) REFERENCES user_data(id_user) ON DELETE CASCADE
 );
 
 -- Create the product_instance table to store instances of products owned by users
@@ -94,6 +107,57 @@ CREATE TABLE user_products (
     CONSTRAINT fk_user_products_to_products 
         FOREIGN KEY (id_product) REFERENCES products(id_product) ON DELETE CASCADE
 );
+
+CREATE OR REPLACE FUNCTION insert_user_product()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_products (id_user, id_product)
+    VALUES (NEW.id_user, NEW.id_product)
+    ON CONFLICT DO NOTHING;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_insert_user_product
+AFTER INSERT ON product_instance
+FOR EACH ROW
+EXECUTE FUNCTION insert_user_product();
+
+CREATE OR REPLACE FUNCTION get_esp32_data_today(instance_id UUID)
+RETURNS TABLE (
+  id_insertion UUID,
+  id_product_instance UUID,
+  common_data JSONB,
+  product_specific_data JSONB,
+  created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT e.id_insertion, e.id_product_instance, e.common_data, e.product_specific_data, e.created_at
+  FROM esp32_data e
+  WHERE e.id_product_instance = instance_id
+    AND e.created_at::date = CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_esp32_data_week(instance_id UUID)
+RETURNS TABLE (
+  id_insertion UUID,
+  id_product_instance UUID,
+  common_data JSONB,
+  product_specific_data JSONB,
+  created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT e.id_insertion, e.id_product_instance, e.common_data, e.product_specific_data, e.created_at
+  FROM esp32_data e
+  WHERE e.id_product_instance = instance_id
+    AND e.created_at::date >= date_trunc('week', CURRENT_DATE)
+    AND e.created_at::date < date_trunc('week', CURRENT_DATE) + INTERVAL '7 days';
+END;
+$$ LANGUAGE plpgsql;
 
 -- Indexes to improve performance on foreign key lookups
 CREATE INDEX idx_product_category ON products(id_category);

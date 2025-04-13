@@ -7,6 +7,8 @@
 source("../models/user_model.R", chdir = TRUE)
 source("../utils/regex.R", chdir = TRUE)
 source("../utils/utils.R", chdir = TRUE)
+source("../utils/request_handler.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 # +-----------------------+
 # |    HELP FUNCTIONS     |
@@ -17,10 +19,10 @@ generate_token <- function(user) {
   current_time <- Sys.time()
 
   # Define token expiration based on user role
-  expiry_duration <- switch(user$user_type,
-    "admin" = as.difftime(30, units = "mins"),
+  expiry_duration <- switch(user$user_role,
+    "analyst" = as.difftime(24, units = "hours"),
     "moderator" = as.difftime(1, units = "hours"),
-    "regular" = as.difftime(24, units = "hours"),
+    "admin" = as.difftime(30, units = "mins"),
     NULL
   )
 
@@ -32,7 +34,7 @@ generate_token <- function(user) {
   payload <- jwt_claim(
     sub = user$id_user,
     username = user$name,
-    role = user$user_type,
+    role = user$user_role,
     exp = as.numeric(expiry_time), # Converts to timestamp UNIX (For JWT)
     jti = substr(uuid::UUIDgenerate(use.time = TRUE), 1, 8)
   )
@@ -41,30 +43,6 @@ generate_token <- function(user) {
   if (nchar(secret_key) == 0) stop("TOKEN_SECRET_KEY Is not defined.")
 
   jwt_encode_hmac(payload, charToRaw(secret_key))
-}
-
-# Get the user id from his token using the request
-get_user_id_from_req <- function(req) {
-  tryCatch(
-    {
-      token <- get_token_from_req(req)
-      decoded_token <- decode_jwt_token(token)
-
-      decoded_token$sub
-    },
-    error = function(e) stop(e)
-  )
-}
-
-# Get the user type from his token using the request
-get_user_type_from_req <- function(req) {
-  tryCatch(
-    {
-      id_user <- get_user_id_from_req(req)
-      get_user_type_by_id(id_user)
-    },
-    error = function(e) stop(e)
-  )
 }
 
 # Contains the logic to check if a password is correct using bcrypt
@@ -83,7 +61,7 @@ check_password <- function(input_password, stored_hashed_password) {
 validate_credentials <- function(email, password) {
   tryCatch(
     {
-      user <- get_user_by_email(email)
+      user <- fetch_user_by_email(email)
 
       if (!is.data.frame(user) || nrow(user) == 0 || !check_password(password, user$password)) {
         return(list(
@@ -112,7 +90,7 @@ validate_credentials <- function(email, password) {
 
 # The function verifies if the email pattern and ensure user input is valid
 # before calling validate_credentials
-account_login <- function(email, password) {
+post_account_login <- function(email, password) {
   req_fields <- list(email, password)
 
   if (any(sapply(req_fields, is_invalid_utf8))) {
@@ -155,12 +133,12 @@ account_login <- function(email, password) {
 # |       REGISTER        |
 # +-----------------------+
 
-create_user <- function(name, email, password, user_type) {
+create_user <- function(name, email, password, user_role) {
   tryCatch(
     {
       hashed_password <- hashpw(password)
 
-      insert_user(name, email, hashed_password, user_type)
+      insert_user(name, email, hashed_password, user_role)
 
       return(list(
         status = "created",
@@ -183,8 +161,8 @@ create_user <- function(name, email, password, user_type) {
 }
 
 # Function to register a user
-account_register <- function(name, email, password, user_type) {
-  req_fields <- list(name, email, user_type, password)
+post_account_register <- function(name, email, password, user_role) {
+  req_fields <- list(name, email, user_role, password)
 
   if (any(sapply(req_fields, is_invalid_utf8))) {
     return(list(
@@ -214,24 +192,24 @@ account_register <- function(name, email, password, user_type) {
     ))
   }
 
-  create_user(name, email, password, user_type)
+  create_user(name, email, password, user_role)
 }
 
 # +-----------------------+
-# |         USER          |
+# |         USERS         |
 # +-----------------------+
 # +-----------------------+
-# |        GET ALL        |
+# |          ALL          |
 # +-----------------------+
 
 # Function to get all users
-user_get_all <- function(req) {
-  user_type <- tryCatch(
-    get_user_type_from_req(req),
+get_users_all <- function(req) {
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
     error = function(e) return(NULL)
   )
 
-  if (is.null(user_type) || user_type != "admin") {
+  if (is.null(user_role) || user_role != "admin") {
     return(list(
       status = "unauthorized",
       message = "To retrieve all user info, you must be an administrator",
@@ -240,7 +218,7 @@ user_get_all <- function(req) {
   }
 
   users <- tryCatch(
-    get_all_users(),
+    fetch_all_users(),
     error = function(e) {
       return(list(
         status = "internal_server_error",
@@ -266,44 +244,44 @@ user_get_all <- function(req) {
 }
 
 # +-----------------------+
-# |       GET TYPE        |
+# |         ROLE          |
 # +-----------------------+
 
-user_get_type <- function(req) {
+get_users_role <- function(req) {
   tryCatch(
     {
-      user_type <- get_user_type_from_req(req)
+      user_role <- get_user_role_from_req(req)
 
-      if (!is.data.frame(user_type) || nrow(user_type) == 0) {
+      if (!is.data.frame(user_role) || nrow(user_role) == 0) {
         return(list(
           status = "not_found",
           message = "There are no users in the database that own this token",
-          data = list(user_type = NULL)
+          data = list(user_role = NULL)
         ))
       }
 
       list(
         status = "success",
-        message = "User type successfully retrieved",
-        data = list(user_type = user_type)
+        message = "User role successfully retrieved",
+        data = list(user_role = user_role)
       )
     },
     error = function(e) {
       list(
         status = "internal_server_error",
         message = paste("Unexpected Error:", e$message),
-        data = list(user_type = NULL)
+        data = list(user_role = NULL)
       )
     }
   )
 }
 
 # +-----------------------+
-# |          GET          |
+# |      GET WITH ID      |
 # +-----------------------+
 
 # Function to get a user by ID
-user_get_with_id <- function(req, id_user) {
+get_users_with_id <- function(req, id_user) {
   if (is_invalid_utf8(id_user) || !UUIDvalidate(id_user)) {
     return(list(
       status = "bad_request",
@@ -312,12 +290,12 @@ user_get_with_id <- function(req, id_user) {
     ))
   }
 
-  user_type <- tryCatch(
-    get_user_type_from_req(req),
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
     error = function(e) return(NULL)
   )
 
-  if (is.null(user_type) || user_type != "admin") {
+  if (is.null(user_role) || user_role != "admin") {
     return(list(
       status = "unauthorized",
       message = "Retrieving user information that does not belong to you requires administrative privileges. To access your own data, use a different endpoint",
@@ -326,7 +304,7 @@ user_get_with_id <- function(req, id_user) {
   }
 
   user <- tryCatch(
-    get_user_by_id(id_user),
+    fetch_user_by_id(id_user),
     error = function(e) {
       return(list(
         status = "internal_server_error",
