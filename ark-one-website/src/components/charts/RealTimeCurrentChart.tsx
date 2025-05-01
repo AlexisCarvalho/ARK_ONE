@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../api';
+import api from '../../api';
 
 interface RealTimeChartProps {
   id_product_instance: number;
 }
 
-const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
+const RealTimeCurrentChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [previousImgUrl, setPreviousImgUrl] = useState<string | null>(null);
@@ -16,7 +16,7 @@ const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_p
       setLoading(true);
 
       const response = await api.get(
-        `Analytics/generateTemperatureGraph?id_product_instance=${id_product_instance}`,
+        `Analytics/generateCurrentTrendGraph?id_product_instance=${id_product_instance}`,
         { responseType: 'blob' }
       );
 
@@ -54,13 +54,13 @@ const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_p
   return (
     <Box>
       <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-        Variação da Temperatura do Painel Solar
+        Variação da Corrente
       </Typography>
       <Box position="relative" width="100%">
         {imgUrl ? (
           <img
             src={imgUrl}
-            alt="Gráfico de Temperatura do Painel Solar"
+            alt="Gráfico de Corrente"
             style={{ width: '100%', height: 'auto' }}
           />
         ) : loading ? (
@@ -77,4 +77,4 @@ const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_p
   );
 };
 
-export default RealTimeSolarPanelTemperatureChart;
+export default RealTimeCurrentChart;

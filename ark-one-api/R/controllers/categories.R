@@ -1,10 +1,11 @@
-# +-----------------------+
-# |                       |
-# |       CATEGORY        |
-# |                       |
-# +-----------------------+
+# +---------------------+
+# |                     |
+# |     CATEGORIES      |
+# |                     |
+# +---------------------+
 
 source("../services/category_service.R", chdir = TRUE)
+source("../utils/response_handler.R", chdir = TRUE)
 
 #* Create a new category
 #* @param category_name The name of the category
@@ -12,130 +13,61 @@ source("../services/category_service.R", chdir = TRUE)
 #* @param id_father_category The ID of the parent category (optional)
 #* @tag Categories
 #* @post /create
-function(res, category_name, category_description, id_father_category = NA) {
-  tryCatch({
-    if (missing(category_name) || missing(category_description)) {
-     res$status <- 400
-     return(list(status = "error", message = "Missing required parameters: category_name or category_description"))
-    }
-  
-    if (is.na(id_father_category) || is.null(id_father_category)) {
-      id_father_category <- NULL
-    } else {
-      id_father_category <- id_father_category
-    }
-  
-    result <- future::value(future::future({
-    create_category(category_name, category_description, id_father_category)
-    }))
-  
-    res$status <- result$status_code
-    return(list(status = result$status, message = result$message))
-  }, error = function(e) {
-   return(list(status = "error", message = "Failed to create categorie", details = e$message))
-  })
+#* @response 201 Created if the category is successfully created
+#* @response 400 Bad Request if parameters are invalid
+#* @response 401 Unauthorized if user is not an admin
+#* @response 500 Internal Server Error
+function(res, req, category_name, category_description, id_father_category = NA) {
+  id_father_category <- if (is.na(id_father_category)) NULL else id_father_category
+  send_http_response(res, post_category_register(req, category_name, category_description, id_father_category))
 }
 
 #* Get all categories
 #* @tag Categories
 #* @get /get_all
 #* @response 200 Returns a list of all categories
-#* @response 500 Internal Server Error if there is an issue retrieving categories
-function() {
-  tryCatch({
-    categories <- future::value(future::future({
-      get_all_categories()
-    }))
-    return(list(status = "success", data = categories))
-  }, error = function(e) {
-    return(list(status = "error", message = "Failed to retrieve categories", details = e$message))
-  })
+#* @response 404 Not Found if there are no categories
+#* @response 500 Internal Server Error
+function(res) {
+  send_http_response(res, get_categories_get_all())
 }
 
 #* Get a category by ID
-#* @param id The ID of the category to retrieve
+#* @param id_category The ID of the category to retrieve
 #* @tag Categories
-#* @get /<id>
+#* @get /<id_category>
 #* @response 200 Returns the details of the specified category
+#* @response 400 Bad Request if the ID is invalid
 #* @response 404 Not Found if the category does not exist
-#* @response 500 Internal Server Error if there is an issue retrieving the category
-function(id) {
-  if (missing(id) || !is.numeric(as.numeric(id))) {
-    return(list(status = "error", message = "Invalid or missing category ID"))
-  }
-  
-  id <- as.numeric(id)
-  
-  tryCatch({
-    category <- get_category_by_id(id)
-    
-    if (is.null(category) || nrow(category) == 0) {
-      return(list(status = "error", message = "Category not found"))
-    }
-    
-    return(list(status = "success", data = category))
-    
-  }, error = function(e) {
-    return(list(status = "error", message = "Failed to retrieve category", details = e$message))
-  })
+#* @response 500 Internal Server Error
+function(res, id_category) {
+  send_http_response(res, get_category_with_id(id_category))
 }
 
 #* Update a category by ID
-#* @param id The ID of the category to update
+#* @param id_category The ID of the category to update
 #* @param category_name New name for the category (optional)
 #* @param category_description New description for the category (optional)
 #* @param id_father_category New parent category ID (optional)
 #* @tag Categories
-#* @put /<id>
+#* @put /<id_category>
 #* @response 200 OK if the category was successfully updated
-#* @response 400 Bad Request if no fields are provided to update or if the ID is invalid
-#* @response 404 Not Found if the category does not exist
-#* @response 500 Internal Server Error if there is an issue updating the category
-function(id, category_name, category_description, id_father_category) {
-  if (missing(id) || !is.numeric(as.numeric(id))) {
-    return(list(status = "error", message = "Invalid or missing category ID"))
-  }
-  
-  id <- as.numeric(id)
-  
-  tryCatch({
-    result <- update_category_by_id(id, category_name, category_description, id_father_category)
-    
-    if (result$status == "error") {
-      return(list(status = "error", message = result$message))
-    }
-    
-    return(list(status = "success", message = "Category updated successfully"))
-    
-  }, error = function(e) {
-    return(list(status = "error", message = "Failed to update category", details = e$message))
-  })
+#* @response 400 Bad Request if the ID or fields are invalid
+#* @response 401 Unauthorized if the user is not an admin
+#* @response 500 Internal Server Error
+function(res, req, id_category, category_name, category_description, id_father_category = NA) {
+  id_father_category <- if (is.na(id_father_category)) NULL else id_father_category
+  send_http_response(res, put_categories_with_id(req, id_category, category_name, category_description, id_father_category))
 }
 
 #* Delete a category by ID
-#* @param id The ID of the category to delete
+#* @param id_category The ID of the category to delete
 #* @tag Categories
-#* @delete /<id>
+#* @delete /<id_category>
 #* @response 200 OK if the category was successfully deleted
-#* @response 404 Not Found if the category does not exist
-#* @response 500 Internal Server Error if there is an issue deleting the category
-function(id) {
-  if (missing(id) || !is.numeric(as.numeric(id))) {
-    return(list(status = "error", message = "Invalid or missing category ID"))
-  }
-  
-  id <- as.numeric(id)
-  
-  tryCatch({
-    result <- delete_category_by_id(id)
-    
-    if (result$status == "error") {
-      return(list(status = "error", message = result$message))
-    }
-    
-    return(list(status = "success", message = "Category deleted successfully"))
-    
-  }, error = function(e) {
-    return(list(status = "error", message = "Failed to delete category", details = e$message))
-  })
+#* @response 400 Bad Request if the ID is invalid
+#* @response 401 Unauthorized if the user is not an admin
+#* @response 500 Internal Server Error
+function(res, req, id_category) {
+  send_http_response(res, delete_category_with_id(req, id_category))
 }

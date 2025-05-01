@@ -51,7 +51,6 @@ product_search_request <- function(base_url, analyst_token, name) {
   return(response)
 }
 
-
 # Request function for product update with JWT authentication
 product_update_request <- function(base_url, admin_token, product_id, product_name, product_description, product_price, location_dependent, id_category = NA) {
   body_data <- list(
@@ -150,7 +149,7 @@ test_product_owned_register <- function(base_url, moderator_token) {
 
   message("Testing with Valid Data ...")
   test_that("Successful product registration returns 201", {
-    response <- product_owned_register_request(base_url, moderator_token, id_product, "14795c76efd0")
+    response <- product_owned_register_request(base_url, moderator_token, id_product, "sampleInformation")
     content <- content(response, as = "parsed", simplifyVector = TRUE)
 
     expect_equal(status_code(response), 201)

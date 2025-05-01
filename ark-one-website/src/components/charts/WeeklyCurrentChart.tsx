@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../api';
+import api from '../../api';
 
-interface RealTimeChartProps {
+interface WeeklyCurrentChartProps {
   id_product_instance: number;
 }
 
-const RealTimeVoltageChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
+const WeeklyCurrentChart: React.FC<WeeklyCurrentChartProps> = ({ id_product_instance }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [previousImgUrl, setPreviousImgUrl] = useState<string | null>(null);
@@ -16,7 +16,7 @@ const RealTimeVoltageChart: React.FC<RealTimeChartProps> = ({ id_product_instanc
       setLoading(true);
 
       const response = await api.get(
-        `Analytics/generateVoltageTrendGraph?id_product_instance=${id_product_instance}`,
+        `Analytics/generateWeeklyCurrentGraph?id_product_instance=${id_product_instance}`,
         { responseType: 'blob' }
       );
 
@@ -54,13 +54,13 @@ const RealTimeVoltageChart: React.FC<RealTimeChartProps> = ({ id_product_instanc
   return (
     <Box>
       <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-        Variação da Voltagem
+        Variação da Corrente Semanal
       </Typography>
       <Box position="relative" width="100%">
         {imgUrl ? (
           <img
             src={imgUrl}
-            alt="Gráfico de Voltagem"
+            alt="Gráfico de Corrente Semanal"
             style={{ width: '100%', height: 'auto' }}
           />
         ) : loading ? (
@@ -77,4 +77,4 @@ const RealTimeVoltageChart: React.FC<RealTimeChartProps> = ({ id_product_instanc
   );
 };
 
-export default RealTimeVoltageChart;
+export default WeeklyCurrentChart;

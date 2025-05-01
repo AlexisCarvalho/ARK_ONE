@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AppBar, Toolbar, Button, Typography, Box } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 
 const NavBar: React.FC = () => {
   const location = useLocation();

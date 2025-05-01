@@ -1,5 +1,5 @@
 import React from 'react';
-import MapComponent from './MapComponent';
+import MapComponent from '../maps/MapComponent';
 import { Container, Typography, Box } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 

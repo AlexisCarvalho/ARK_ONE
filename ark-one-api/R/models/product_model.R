@@ -158,7 +158,6 @@ fetch_product_by_id <- function(id) {
   )
 }
 
-
 update_product <- function(id_product, product_name, product_description, location_dependent, product_price, id_category) {
   con <- get_conn()
 
@@ -170,9 +169,13 @@ update_product <- function(id_product, product_name, product_description, locati
 
   tryCatch(
     {
-      sql_query <- "UPDATE products SET product_name = $2, product_description = $3, location_dependent = $4, product_price = $5, id_category = $6 WHERE id_product = $1"
+      query <- "UPDATE products SET product_name = $2, product_description = $3, location_dependent = $4, product_price = $5, id_category = $6 WHERE id_product = $1"
 
-      return(dbExecute(con, sql_query, params = list(id_product, product_name, product_description, location_dependent, product_price, id_category)))
+      affected_rows <- dbExecute(con, query, params = list(id_product, product_name, product_description, location_dependent, product_price, id_category))
+
+      if (affected_rows == 0) {
+        stop("\"no_rows_updated\"")
+      }
     },
     error = function(e) stop(e)
   )
@@ -191,12 +194,15 @@ erase_product <- function(id_product) {
     {
       DBI::dbBegin(con)
 
-      query_delete_product <- "DELETE FROM products WHERE id_product = $1"
-      DBI::dbExecute(con, query_delete_product, params = list(id_product))
+      query <- "DELETE FROM products WHERE id_product = $1"
+
+      affected_rows <- DBI::dbExecute(con, query, params = list(id_product))
+
+      if (affected_rows == 0) {
+        stop("\"no_rows_deleted\"")
+      }
 
       DBI::dbCommit(con)
-
-      return(TRUE)
     },
     error = function(e) {
       DBI::dbRollback(con)
@@ -226,8 +232,7 @@ erase_product_owned <- function(esp32_unique_id) {
       product_instance <- DBI::dbGetQuery(con, query_select, params = list(esp32_unique_id))
 
       if (nrow(product_instance) == 0) {
-        DBI::dbRollback(con)
-        return(NULL)
+        stop("\"no_rows_deleted\"")
       }
 
       id_product <- product_instance$id_product
@@ -249,40 +254,16 @@ erase_product_owned <- function(esp32_unique_id) {
           DELETE FROM user_products
           WHERE id_user = $1 AND id_product = $2"
         DBI::dbExecute(con, query_delete_user_product, params = list(id_user, id_product))
+        # Here is not necessary to search if changes where made or there is no_rows_deleted
+        # because the logic make impossible to get here if there is no product_instance
       }
 
       DBI::dbCommit(con)
-      return(TRUE)
     },
     error = function(e) {
       DBI::dbRollback(con)
       stop(e)
     }
-  )
-}
-
-########
-
-fetch_products_by_user <- function(user_id) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  tryCatch(
-    {
-      query <- "
-          SELECT p.*
-          FROM products p
-          JOIN product_instance pi ON p.id_product = pi.id_product
-          WHERE pi.id_user = $1"
-
-      return(dbGetQuery(con, query, params = list(user_id)))
-    },
-    error = function(e) stop(e)
   )
 }
 
@@ -301,283 +282,5 @@ fetch_products_by_name <- function(name) {
       return(dbGetQuery(con, query, params = list(paste0("%", name, "%"))))
     },
     error = function(e) stop(e)
-  )
-}
-
-fetch_product_instance_by_id <- function(id_product_instance) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  tryCatch(
-    {
-      query <- "SELECT * FROM product_instance WHERE id_product_instance = $1"
-      return(DBI::dbGetQuery(con, query, params = list(id_product_instance)))
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-update_product_instance <- function(id_product_instance, id_product = NULL, id_user = NULL, esp32_unique_id = NULL) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  fields_to_update <- list()
-  params <- list()
-  param_index <- 1
-
-  if (!is.null(id_product)) {
-    fields_to_update <- c(fields_to_update, paste0("id_product = $", param_index))
-    params[[param_index]] <- id_product
-    param_index <- param_index + 1
-  }
-  if (!is.null(id_user)) {
-    fields_to_update <- c(fields_to_update, paste0("id_user = $", param_index))
-    params[[param_index]] <- id_user
-    param_index <- param_index + 1
-  }
-  if (!is.null(esp32_unique_id)) {
-    fields_to_update <- c(fields_to_update, paste0("esp32_unique_id = $", param_index))
-    params[[param_index]] <- esp32_unique_id
-    param_index <- param_index + 1
-  }
-
-  if (length(fields_to_update) == 0) {
-    return(0) # No fields to update
-  }
-
-  set_clause <- paste(fields_to_update, collapse = ", ")
-  query <- paste0("UPDATE product_instance SET ", set_clause, " WHERE id_product_instance = $", param_index)
-
-  params[[param_index]] <- id_product_instance
-
-  tryCatch(
-    {
-      result <- DBI::dbExecute(con, query, params = params)
-      return(result)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-delete_product_instance <- function(id_product_instance) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "DELETE FROM product_instance WHERE id_product_instance = $1"
-
-  tryCatch(
-    {
-      result <- DBI::dbExecute(con, query, params = list(id_product_instance))
-      return(result)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_product_instances_by_user_id <- function(user_id) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT pi.*
-      FROM product_instance pi
-      WHERE pi.id_user = $1"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(user_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_product_instances_by_product_id <- function(product_id) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT pi.*
-      FROM product_instance pi
-      WHERE pi.id_product = $1"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(product_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_products_purchased_by_user <- function(user_id) {
-  con <- get_conn()
-
-  if (is.null(con) || !DBI::dbIsValid(con)) {
-    stop("Database Connection Failed")
-  }
-
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT p.*
-      FROM products p
-      JOIN product_instance pi ON p.id_product = pi.id_product
-      WHERE pi.id_user = $1"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(user_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-insert_product_instance <- function(product_id, user_id, esp32_id) {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "INSERT INTO product_instance (id_product, id_user, esp32_unique_id) VALUES ($1, $2, $3)"
-
-  tryCatch(
-    {
-      DBI::dbExecute(con, query, params = list(product_id, user_id, esp32_id))
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_products_by_user_and_type <- function(user_id, product_id) {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT pi.id_product_instance, p.product_name, pi.esp32_unique_id, p.location_dependent
-      FROM product_instance pi
-      JOIN products p ON pi.id_product = p.id_product
-      WHERE pi.id_user = $1 AND p.id_product = $2"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(user_id, product_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_all_user_products <- function() {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  tryCatch(
-    {
-      associations <- DBI::dbReadTable(con, "user_products")
-      return(associations)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_user_products_by_user_id <- function(user_id) {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT up.*, p.product_name
-      FROM user_products up
-      JOIN products p ON up.id_product = p.id_product
-      WHERE up.id_user = $1"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(user_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-fetch_user_products_by_product_id <- function(product_id) {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "
-      SELECT up.*, u.name
-      FROM user_products up
-      JOIN user_data u ON up.id_user = u.id_user
-      WHERE up.id_product = $1"
-
-  tryCatch(
-    {
-      results <- DBI::dbGetQuery(con, query, params = list(product_id))
-      return(results)
-    },
-    error = function(e) {
-      stop(e)
-    }
-  )
-}
-
-remove_user_product <- function(id_user, id_product) {
-  con <- get_conn()
-  on.exit(pool_return(con), add = TRUE)
-
-  query <- "DELETE FROM user_products WHERE id_user = $1 AND id_product = $2"
-
-  tryCatch(
-    {
-      affected_rows <- DBI::dbExecute(con, query, params = list(id_user, id_product))
-      return(affected_rows)
-    },
-    error = function(e) {
-      stop(e)
-    }
   )
 }

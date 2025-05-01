@@ -17,7 +17,7 @@ function(res) {
 }
 
 #* Return the current values on the list to be sended to the database
-#* @get /recent_values/solar_panel
+#* @get /recent_values/solar_tracker
 #* @response 200 "The values recently received by the API"
 #* @description Endpoint is designated to peek on the values that will be sended to the database once the query threshold is filled.
 #* @tag Status

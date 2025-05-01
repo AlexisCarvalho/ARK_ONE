@@ -18,7 +18,7 @@ fetch_product_instance <- function(esp32_unique_id) {
   )
 }
 
-bulk_insert_solar_panel_values <- function(solar_panel_data_to_query) {
+bulk_insert_solar_tracker_values <- function(solar_tracker_data_to_query) {
   con <- get_conn()
 
   if (is.null(con) || !DBI::dbIsValid(con)) {
@@ -29,7 +29,7 @@ bulk_insert_solar_panel_values <- function(solar_panel_data_to_query) {
 
   tryCatch(
     {
-      values_list <- apply(solar_panel_data_to_query, 1, function(row) {
+      values_list <- apply(solar_tracker_data_to_query, 1, function(row) {
         common_data <- toJSON(list(voltage = row['voltage'], current = row['current']), auto_unbox = TRUE)
         product_specific_data <- toJSON(list(servo_tower_angle = row['servo_tower_angle'], 
                                             solar_panel_temperature = row['solar_panel_temperature'], 

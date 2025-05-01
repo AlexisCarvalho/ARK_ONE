@@ -219,14 +219,16 @@ get_users_all <- function(req) {
 
   users <- tryCatch(
     fetch_all_users(),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(users = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(users, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", users$message),
+      data = list(users = NULL)
+    ))
+  }
 
   if (!is.data.frame(users) || nrow(users) == 0) {
     return(list(
@@ -292,7 +294,9 @@ get_users_with_id <- function(req, id_user) {
 
   user_role <- tryCatch(
     get_user_role_from_req(req),
-    error = function(e) return(NULL)
+    error = function(e) {
+      NULL
+    }
   )
 
   if (is.null(user_role) || user_role != "admin") {
@@ -305,14 +309,16 @@ get_users_with_id <- function(req, id_user) {
 
   user <- tryCatch(
     fetch_user_by_id(id_user),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(user = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(user, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", user$message),
+      data = list(user = NULL)
+    ))
+  }
 
   if (!is.data.frame(user) || nrow(user) == 0) {
     return(list(

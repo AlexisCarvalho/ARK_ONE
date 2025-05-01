@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Tabs, Tab, Box, Grid, Typography, Card, CardContent, Button } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import RealTimeVoltageChart from './RealTimeVoltageChart';
-import RealTimeCurrentChart from './RealTimeCurrentChart';
-import RealTimeTemperatureChart from './RealTimeTemperatureChart';
-import TodayVoltageChart from './TodayVoltageChart';
-import TodayCurrentChart from './TodayCurrentChart';
-import StatisticsCard from './StatisticsCard';
-import WeeklyVoltageChart from './WeeklyVoltageChart';
-import WeeklyCurrentChart from './WeeklyCurrentChart';
+import RealTimeVoltageChart from '../charts/RealTimeVoltageChart';
+import RealTimeCurrentChart from '../charts/RealTimeCurrentChart';
+import RealTimeTemperatureChart from '../charts/RealTimeTemperatureChart';
+import TodayVoltageChart from '../charts/TodayVoltageChart';
+import TodayCurrentChart from '../charts/TodayCurrentChart';
+import StatisticsCard from '../charts/StatisticsCard';
+import WeeklyVoltageChart from '../charts/WeeklyVoltageChart';
+import WeeklyCurrentChart from '../charts/WeeklyCurrentChart';
 
 const Dashboard: React.FC = () => {
   const [value, setValue] = useState(0);

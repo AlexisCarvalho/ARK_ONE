@@ -1,3 +1,24 @@
+find_esp32_unique_id <- function(id_product_instance, esp32_metadata) {
+  found <- FALSE
+  esp32_unique_id <- NULL
+
+  for (obj_name in ls(envir = esp32_metadata)) {
+    obj <- get(obj_name, envir = esp32_metadata)
+
+    if (!is.null(obj$id_product_instance) && obj$id_product_instance == id_product_instance) {
+      found <- TRUE
+      esp32_unique_id <- obj_name
+      break
+    }
+  }
+
+  if (found) {
+    esp32_unique_id
+  } else {
+    NULL
+  }
+}
+
 # Validate all fields inserted on the function (numeric)
 validate_numeric_fields <- function(...) {
   fields <- list(...)
@@ -15,7 +36,7 @@ validate_numeric_fields <- function(...) {
   return(NULL) # If all fields are valid return NULL
 }
 
-# Validade all fields inserted on the function and convert to (numeric)
+# Validate all fields inserted on the function and convert to (numeric)
 validate_and_convert_numeric_fields <- function(...) {
   fields <- list(...)
   field_names <- names(fields)
@@ -27,17 +48,19 @@ validate_and_convert_numeric_fields <- function(...) {
     if (is.na(num_value)) {
       return(list(
         status = "bad_request",
-        message = paste(field_names[i], "must be a valid number")
+        message = paste(field_names[i], "must be a valid number"),
+        data = NULL
       ))
     }
 
     converted_values[[field_names[i]]] <- num_value
   }
 
-  return(list(
+  list(
     status = "success",
+    message = "Successfully Converted to Numeric",
     data = converted_values
-  ))
+  )
 }
 
 # Verifies if a input is a valid numeric

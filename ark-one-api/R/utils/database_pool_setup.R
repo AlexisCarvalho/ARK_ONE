@@ -26,10 +26,8 @@ add_pool <- function(pool_name, drv, db_params) {
   if (exists(pool_name, envir = pools_env)) {
     existing_pool <- pools_env[[pool_name]]
     if (is_pool_active(existing_pool)) {
-      message(paste("Pool", pool_name, "already exists and is active"))
       return(existing_pool)
     } else {
-      message(paste("Pool", pool_name, "exists but is not active. Recreating..."))
       if (!is.null(existing_pool)) try(poolClose(existing_pool), silent = TRUE)
     }
   }
@@ -50,10 +48,9 @@ add_pool <- function(pool_name, drv, db_params) {
 # Return the pool if it exists if not send a message for debug
 get_pool <- function(pool_name) {
   if (exists(pool_name, envir = pools_env)) {
-    return(pools_env[[pool_name]])
+    pools_env[[pool_name]]
   } else {
-    message(paste("Pool", pool_name, "not found"))
-    return(NULL)
+    NULL
   }
 }
 
@@ -81,34 +78,4 @@ get_conn <- function(pool_name = "postgres_pool") {
     }
   )
   return(conn)
-}
-
-
-
-
-# TODO: Remove after the end of refactor
-# Maintained as reference, will be removed soon
-getConn <- function(dbname = Sys.getenv("DB_NAME"),
-                    host = Sys.getenv("DB_HOST"),
-                    port = as.integer(Sys.getenv("DB_PORT")),
-                    user = Sys.getenv("DB_USER"),
-                    password = Sys.getenv("DB_PASSWORD")) {
-  con <- NULL
-
-  tryCatch(
-    {
-      con <- dbConnect(RPostgres::Postgres(),
-        dbname = dbname,
-        host = host,
-        port = port,
-        user = user,
-        password = password
-      )
-      return(con)
-    },
-    error = function(e) {
-      message(paste("Error connecting to database:", e$message))
-      return(NULL)
-    }
-  )
 }

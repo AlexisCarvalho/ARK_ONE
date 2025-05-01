@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../api';
+import api from '../../api';
 
 interface StatisticsCardProps {
   id_product_instance: number;

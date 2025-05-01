@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 
 const RegisterESP32: React.FC = () => {
   const [esp32Id, setEsp32Id] = useState('');

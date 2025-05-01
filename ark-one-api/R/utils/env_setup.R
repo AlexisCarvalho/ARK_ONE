@@ -1,7 +1,7 @@
-# Initialize esp32_data_storage, that is used to store esp32 data
-if (!exists("esp32_data_storage", envir = .GlobalEnv)) {
-  esp32_data_storage <- new.env(parent = .GlobalEnv)
-  assign("esp32_data_storage", esp32_data_storage, envir = .GlobalEnv)
+# Initialize solar_tracker_data_storage, that is used to store esp32 data
+if (!exists("solar_tracker_data_storage", envir = .GlobalEnv)) {
+  solar_tracker_data_storage <- new.env(parent = .GlobalEnv)
+  assign("solar_tracker_data_storage", solar_tracker_data_storage, envir = .GlobalEnv)
 }
 
 # Initialize esp32_metadata, that is used to store esp32 data
@@ -22,6 +22,7 @@ if (!exists("status_env", envir = .GlobalEnv)) {
   status_env$http_status_map <- list(
     success = 200,
     created = 201,
+    accepted = 202,
     updated = 204,
     bad_request = 400,
     unauthorized = 401,
@@ -144,6 +145,15 @@ if (!exists("status_env", envir = .GlobalEnv)) {
     fk_user_affiliations_owner_to_user = list(
       status = "bad_request",
       message = "User_affiliations owner must reference a valid user"
+    ),
+    # No Rows Modified
+    no_rows_updated = list(
+      status = "not_found",
+      message = "No rows updated, associated key not founded"
+    ),
+    no_rows_deleted = list(
+      status = "not_found",
+      message = "No rows deleted, associated key not founded"
     )
   )
 
@@ -170,10 +180,10 @@ add_pool(
 )
 
 clear_all_environments <- function() {
-  if (exists("esp32_data_storage", envir = .GlobalEnv)) {
-    esp32_data_storage <- get("esp32_data_storage", envir = .GlobalEnv)
-    rm(list = ls(envir = esp32_data_storage), envir = esp32_data_storage)
-    rm(esp32_data_storage, envir = .GlobalEnv)
+  if (exists("solar_tracker_data_storage", envir = .GlobalEnv)) {
+    solar_tracker_data_storage <- get("solar_tracker_data_storage", envir = .GlobalEnv)
+    rm(list = ls(envir = solar_tracker_data_storage), envir = solar_tracker_data_storage)
+    rm(solar_tracker_data_storage, envir = .GlobalEnv)
   }
 
   if (exists("esp32_metadata", envir = .GlobalEnv)) {
@@ -190,11 +200,9 @@ clear_all_environments <- function() {
       tryCatch({
         poolClose(pools_env[[pool_name]])
       }, error = function(e) {
-        message(sprintf("Erro ao fechar pool '%s': %s", pool_name, e$message))
+        message(sprintf("Error closing pool '%s': %s", pool_name, e$message))
       })
     }
-
-    message("All database pools have been closed.")
 
     rm(list = pool_names, envir = pools_env)
     rm(pools_env, envir = .GlobalEnv)
@@ -207,5 +215,4 @@ clear_all_environments <- function() {
   }
 
   gc()  # Garbage Collector Call for cleaning the memory
-  message("All environments and variables are cleaned")
 }

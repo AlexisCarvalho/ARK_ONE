@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../api';
+import api from '../../api';
 
-interface RealTimeChartProps {
+interface TodayCurrentChartProps {
   id_product_instance: number;
 }
 
-const RealTimeServoTowerAngleChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
+const TodayCurrentChart: React.FC<TodayCurrentChartProps> = ({ id_product_instance }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [previousImgUrl, setPreviousImgUrl] = useState<string | null>(null);
@@ -16,7 +16,7 @@ const RealTimeServoTowerAngleChart: React.FC<RealTimeChartProps> = ({ id_product
       setLoading(true);
 
       const response = await api.get(
-        `Analytics/generateServoTowerAngleTrendGraph?id_product_instance=${id_product_instance}`,
+        `Analytics/generateCurrentZScoreGraph?id_product_instance=${id_product_instance}`,
         { responseType: 'blob' }
       );
 
@@ -54,27 +54,13 @@ const RealTimeServoTowerAngleChart: React.FC<RealTimeChartProps> = ({ id_product
   return (
     <Box>
       <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-        Variação do Ângulo da Torre
+        Variação da Corrente
       </Typography>
       <Box position="relative" width="100%">
-        {previousImgUrl && (
-          <img
-            src={previousImgUrl}
-            alt="Gráfico de Ângulo de Torre Anterior"
-            style={{
-              width: '100%',
-              height: 'auto',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              opacity: 0.5,
-            }}
-          />
-        )}
         {imgUrl ? (
           <img
             src={imgUrl}
-            alt="Gráfico de Ângulo de Torre"
+            alt="Gráfico de Corrente"
             style={{ width: '100%', height: 'auto' }}
           />
         ) : loading ? (
@@ -91,4 +77,4 @@ const RealTimeServoTowerAngleChart: React.FC<RealTimeChartProps> = ({ id_product
   );
 };
 
-export default RealTimeServoTowerAngleChart;
+export default TodayCurrentChart;

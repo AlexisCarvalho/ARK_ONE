@@ -5,7 +5,7 @@
 # +-----------------------+
 
 source("../models/product_model.R", chdir = TRUE)
-source("solar_panel_service.R", chdir = TRUE)
+source("solar_tracker_service.R", chdir = TRUE)
 source("../utils/response_handler.R", chdir = TRUE)
 source("../utils/request_handler.R", chdir = TRUE)
 source("../utils/utils.R", chdir = TRUE)
@@ -25,19 +25,21 @@ source("../utils/utils.R", chdir = TRUE)
 get_products_get_all <- function() {
   products <- tryCatch(
     fetch_all_products(),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(products = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(products, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", products$message),
+      data = list(products = NULL)
+    ))
+  }
 
   if (!is.data.frame(products) || nrow(products) == 0) {
     return(list(
       status = "not_found",
-      message = "There are no products in the database",
+      message = "There aren't any products in the database",
       data = list(products = NULL)
     ))
   }
@@ -57,7 +59,9 @@ get_products_get_all <- function() {
 get_products_owned <- function(req) {
   id_user <- tryCatch(
     get_id_user_from_req(req),
-    error = function(e) return(NULL)
+    error = function(e) {
+      NULL
+    }
   )
 
   if (is.null(id_user)) {
@@ -70,14 +74,16 @@ get_products_owned <- function(req) {
 
   products_owned <- tryCatch(
     fetch_products_owned(id_user),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(products_owned = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(products_owned, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", products_owned$message),
+      data = list(products_owned = NULL)
+    ))
+  }
 
   if (!is.data.frame(products_owned) || nrow(products_owned) == 0) {
     return(list(
@@ -102,7 +108,9 @@ get_products_owned <- function(req) {
 get_products_owned_all_users <- function(req) {
   user_role <- tryCatch(
     get_user_role_from_req(req),
-    error = function(e) return(NULL)
+    error = function(e) {
+      return(NULL)
+    }
   )
 
   if (is.null(user_role) || user_role != "admin") {
@@ -115,14 +123,16 @@ get_products_owned_all_users <- function(req) {
 
   products_owned <- tryCatch(
     fetch_products_owned_all_users(),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(products_owned = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(products_owned, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", products_owned$message),
+      data = list(products_owned = NULL)
+    ))
+  }
 
   if (!is.data.frame(products_owned) || nrow(products_owned) == 0) {
     return(list(
@@ -173,19 +183,18 @@ post_products_register <- function(req, product_name, product_description, locat
   user_role <- tryCatch(
     get_user_role_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
   if (is.null(user_role) || user_role != "admin") {
     return(list(
       status = "unauthorized",
-      message = "To register a product, you must be an administrator",
-      data = list(users = NULL)
+      message = "To register a product, you must be an administrator"
     ))
   }
 
   if (any(sapply(list(product_name, product_description), is_invalid_utf8)) ||
-      any(sapply(list(product_name, product_description), is_blank_string))) {
+    any(sapply(list(product_name, product_description), is_blank_string))) {
     return(list(
       status = "bad_request",
       message = "Product Name and Description must be valid, non-empty and UTF-8 strings"
@@ -267,19 +276,18 @@ post_products_owned <- function(req, id_product, esp32_unique_id) {
   user_role <- tryCatch(
     get_user_role_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
   if (is.null(user_role) || user_role == "analyst") {
     return(list(
       status = "unauthorized",
-      message = "To register a product on your name, you must be a moderator or higher",
-      data = list(users = NULL)
+      message = "To register a product on your name, you must be a moderator or higher"
     ))
   }
 
   if (any(sapply(list(id_product, esp32_unique_id), is_invalid_utf8)) ||
-      is_blank_string(esp32_unique_id)) {
+    is_blank_string(esp32_unique_id)) {
     return(list(
       status = "bad_request",
       message = "Product ID and ESP32 ID must be valid, non-empty and UTF-8 strings"
@@ -296,9 +304,16 @@ post_products_owned <- function(req, id_product, esp32_unique_id) {
   id_user <- tryCatch(
     get_id_user_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
+
+  if (is.null(id_user)) {
+    return(list(
+      status = "unauthorized",
+      message = "Failed to identify user, malformed or invalid token"
+    ))
+  }
 
   create_product_owned(id_product, id_user, esp32_unique_id)
 }
@@ -309,21 +324,31 @@ post_products_owned <- function(req, id_product, esp32_unique_id) {
 
 # Function to get a product by ID
 get_products_with_id <- function(id_product) {
+  if (is_invalid_utf8(id_product) || !UUIDvalidate(id_product)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid product ID",
+      data = list(product = NULL)
+    ))
+  }
+
   product <- tryCatch(
     fetch_product_by_id(id_product),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(user = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(product, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", product$message),
+      data = list(product = NULL)
+    ))
+  }
 
   if (!is.data.frame(product) || nrow(product) == 0) {
     return(list(
       status = "not_found",
-      message = "There are no product with this id in the database",
+      message = "There isn't any product with this id in the database",
       data = list(product = NULL)
     ))
   }
@@ -343,7 +368,9 @@ get_products_with_id <- function(id_product) {
 get_products_owned_with_id <- function(req, id_product) {
   id_user <- tryCatch(
     get_id_user_from_req(req),
-    error = function(e) return(NULL)
+    error = function(e) {
+      NULL
+    }
   )
 
   if (is.null(id_user)) {
@@ -364,14 +391,16 @@ get_products_owned_with_id <- function(req, id_product) {
 
   products_owned <- tryCatch(
     fetch_products_owned_with_id(id_user, id_product),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(products_owned = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(products_owned, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", products_owned$message),
+      data = list(products_owned = NULL)
+    ))
+  }
 
   if (!is.data.frame(products_owned) || nrow(products_owned) == 0) {
     return(list(
@@ -398,7 +427,7 @@ edit_product <- function(id_product, product_name, product_description, location
       update_product(id_product, product_name, product_description, location_dependent, product_price, id_category)
 
       return(list(
-        status = "created",
+        status = "success",
         message = "Product Updated Successfully"
       ))
     },
@@ -422,19 +451,18 @@ put_products_with_id <- function(req, id_product, product_name, product_descript
   user_role <- tryCatch(
     get_user_role_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
   if (is.null(user_role) || user_role != "admin") {
     return(list(
       status = "unauthorized",
-      message = "To update a product, you must be an administrator",
-      data = list(users = NULL)
+      message = "To update a product, you must be an administrator"
     ))
   }
 
   if (any(sapply(list(product_name, product_description), is_invalid_utf8)) ||
-      any(sapply(list(product_name, product_description), is_blank_string))) {
+    any(sapply(list(product_name, product_description), is_blank_string))) {
     return(list(
       status = "bad_request",
       message = "Product Name and Description must be valid, non-empty and UTF-8 strings"
@@ -521,14 +549,13 @@ delete_products_with_id <- function(req, id_product) {
   user_role <- tryCatch(
     get_user_role_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
   if (is.null(user_role) || user_role != "admin") {
     return(list(
       status = "unauthorized",
-      message = "To delete a product, you must be an administrator",
-      data = list(users = NULL)
+      message = "To delete a product, you must be an administrator"
     ))
   }
 
@@ -549,14 +576,7 @@ delete_products_with_id <- function(req, id_product) {
 remove_product_owned <- function(esp32_unique_id) {
   tryCatch(
     {
-      result <- erase_product_owned(esp32_unique_id)
-
-      if (is.null(result)) {
-        return(list(
-          status = "not_found",
-          message = "Owned Product Not Found"
-        ))
-      }
+      erase_product_owned(esp32_unique_id)
 
       delete_esp32_from_memory(esp32_unique_id)
 
@@ -584,14 +604,13 @@ delete_products_owned <- function(req, esp32_unique_id) {
   user_role <- tryCatch(
     get_user_role_from_req(req),
     error = function(e) {
-      return(NULL)
+      NULL
     }
   )
   if (is.null(user_role) || user_role == "analyst") {
     return(list(
       status = "unauthorized",
-      message = "To delete a product on your name, you must be an moderator or higher",
-      data = list(users = NULL)
+      message = "To delete a product on your name, you must be an moderator or higher"
     ))
   }
 
@@ -617,14 +636,16 @@ get_products_search <- function(name) {
 
   products <- tryCatch(
     fetch_products_by_name(name),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(products = NULL)
-      ))
-    }
+    error = function(e) e
   )
+
+  if (inherits(products, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", products$message),
+      data = list(products = NULL)
+    ))
+  }
 
   if (!is.data.frame(products) || nrow(products) == 0) {
     return(list(

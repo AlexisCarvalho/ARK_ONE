@@ -1,99 +1,306 @@
+# +---------------------+
+# |                     |
+# |  CATEGORY SERVICE   |
+# |                     |
+# +---------------------+
+
 source("../models/category_model.R", chdir = TRUE)
 
 # +-----------------------+
-# |                       |
-# |   CATEGORY SERVICE    |
-# |                       |
+# |    HELP FUNCTIONS     |
 # +-----------------------+
 
-# Function to create a new category
-create_category <- function(category_name, category_description, id_father_category) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
+# +-------------------------+
+# |       CATEGORIES        |
+# +-------------------------+
+# +-----------------------+
+# |        GET ALL        |
+# +-----------------------+
 
-  if (is.null(id_father_category) || id_father_category == 0) {
-    id_father_category <- NULL
-    id_father_category <- list(id_father_category)
+# Function to get all categories
+get_categories_get_all <- function() {
+  categories <- tryCatch(
+    fetch_all_categories(),
+    error = function(e) e
+  )
+
+  if (inherits(categories, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", categories$message),
+      data = list(categories = NULL)
+    ))
   }
 
+  if (!is.data.frame(categories) || nrow(categories) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There aren't any categories in the database",
+      data = list(categories = NULL)
+    ))
+  }
+
+  list(
+    status = "success",
+    message = "All categories successfully retrieved",
+    data = list(categories = categories)
+  )
+}
+
+# +-----------------------+
+# |      GET WITH ID      |
+# +-----------------------+
+
+# Function to get a category by ID
+get_category_with_id <- function(id_category) {
+  if (is_invalid_utf8(id_category) || !UUIDvalidate(id_category)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid category ID",
+      data = list(category = NULL)
+    ))
+  }
+
+  category <- tryCatch(
+    fetch_category_by_id(id_category),
+    error = function(e) e
+  )
+
+  if (inherits(category, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", category$message),
+      data = list(category = NULL)
+    ))
+  }
+
+  if (!is.data.frame(category) || nrow(category) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There isn't any category with this id in the database",
+      data = list(category = NULL)
+    ))
+  }
+
+  list(
+    status = "success",
+    message = "Category successfully retrieved",
+    data = list(category = category)
+  )
+}
+
+# +-----------------------+
+# |       REGISTER        |
+# +-----------------------+
+
+create_category <- function(category_name, category_description, id_father_category) {
   tryCatch(
     {
-      query <- "INSERT INTO category (category_name, category_description, id_father_category) VALUES ($1, $2, $3)"
-      dbExecute(con, query, params = list(category_name, category_description, id_father_category))
+      insert_category(category_name, category_description, id_father_category)
 
-      return(list(status = "success", status_code = 201, message = "Category created successfully"))
+      return(list(
+        status = "created",
+        message = "Category Registered Successfully"
+      ))
     },
     error = function(e) {
-      if (grepl("duplicate key", e$message, ignore.case = TRUE)) {
-        return(list(status = "error", status_code = 409, message = "A category with this name already exists."))
-      } else if (grepl("violates foreign key constraint", e$message, ignore.case = TRUE)) {
-        return(list(status = "error", status_code = 400, message = "Invalid parent category."))
-      } else if (grepl("connection", e$message, ignore.case = TRUE)) {
-        return(list(status = "error", status_code = 503, message = "Database connection error. Please try again later."))
-      } else {
-        return(list(status = "error", status_code = 500, message = paste("An unexpected error occurred:", e$message)))
+      constraint_name <- find_matching_constraint_pgsql(e$message)
+
+      if (!is.null(constraint_name)) {
+        return(constraint_violation_response(constraint_name))
       }
+
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message)
+      )
     }
   )
 }
 
-# Function to get all categories
-get_all_categories <- function() {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  categories <- dbReadTable(con, "category")
-  return(categories)
-}
-
-# Function to get a category by ID
-get_category_by_id <- function(id) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  query <- "SELECT * FROM category WHERE id_category = $1"
-  category <- dbGetQuery(con, query, params = list(id))
-
-  if (nrow(category) == 0) {
-    return(list(status = "error", message = "Category not found"))
+# Function to handle the creation of a new category
+post_category_register <- function(req, category_name, category_description, id_father_category) {
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
+    error = function(e) {
+      NULL
+    }
+  )
+  if (is.null(user_role) || user_role != "admin") {
+    return(list(
+      status = "unauthorized",
+      message = "To register a category, you must be an administrator"
+    ))
   }
 
-  return(category)
-}
-
-# Function to update a category by ID
-update_category_by_id <- function(id, category_name = NULL, category_description = NULL, id_father_category = NULL) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  updates <- c()
-
-  if (!is.null(category_name)) updates <- c(updates, sprintf("category_name = '%s'", category_name))
-  if (!is.null(category_description)) updates <- c(updates, sprintf("category_description = '%s'", category_description))
-  if (!is.null(id_father_category)) updates <- c(updates, sprintf("id_father_category = %s", id_father_category))
-
-  if (length(updates) > 0) {
-    update_query <- paste(updates, collapse = ", ")
-    dbExecute(con, sprintf("UPDATE category SET %s WHERE id_category = $1", update_query), params = list(id))
-    return(list(status = "success", message = "Category updated"))
+  if (any(sapply(list(category_name, category_description), is_invalid_utf8)) ||
+      any(sapply(list(category_name, category_description), is_blank_string))) {
+    return(list(
+      status = "bad_request",
+      message = "Category Name and Description must be valid, non-empty and UTF-8 strings"
+    ))
   }
 
-  return(list(status = "error", message = "No fields to update"))
-}
-
-# Function to delete a category by ID
-delete_category_by_id <- function(id) {
-  con <- getConn()
-  on.exit(dbDisconnect(con))
-
-  # Check if the category exists before deletion
-  existing_category <- dbGetQuery(con, "SELECT * FROM category WHERE id_category = $1", params = list(id))
-
-  if (nrow(existing_category) == 0) {
-    return(list(status = "error", message = "Category not found"))
+  if (nchar(category_name) > 50) {
+    return(list(
+      status = "bad_request",
+      message = "Category Name can't exceed 50 characters"
+    ))
   }
 
-  dbExecute(con, "DELETE FROM category WHERE id_category = $1", params = list(id))
+  if (nchar(category_description) > 200) {
+    return(list(
+      status = "bad_request",
+      message = "Category Description can't exceed 200 characters"
+    ))
+  }
 
-  return(list(status = "success", message = "Category deleted"))
+  if (!is.null(id_father_category) && (is_invalid_utf8(id_father_category) || !UUIDvalidate(id_father_category))) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Father Category ID"
+    ))
+  }
+
+  id_father_category <- if (is.null(id_father_category)) list(id_father_category) else id_father_category
+
+  create_category(category_name, category_description, id_father_category)
+}
+
+# +-----------------------+
+# |      PUT WITH ID      |
+# +-----------------------+
+
+edit_category <- function(id_category, category_name, category_description, id_father_category) {
+  tryCatch(
+    {
+      update_category(id_category, category_name, category_description, id_father_category)
+
+      return(list(
+        status = "success",
+        message = "Category Updated Successfully"
+      ))
+    },
+    error = function(e) {
+      constraint_name <- find_matching_constraint_pgsql(e$message)
+
+      if (!is.null(constraint_name)) {
+        return(constraint_violation_response(constraint_name))
+      }
+
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message)
+      )
+    }
+  )
+}
+
+# Function to update category by ID in PostgreSQL
+put_categories_with_id <- function(req, id_category, category_name, category_description, id_father_category) {
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
+    error = function(e) {
+      NULL
+    }
+  )
+  if (is.null(user_role) || user_role != "admin") {
+    return(list(
+      status = "unauthorized",
+      message = "To update a category, you must be an administrator"
+    ))
+  }
+
+  if (any(sapply(list(category_name, category_description), is_invalid_utf8)) ||
+      any(sapply(list(category_name, category_description), is_blank_string))) {
+    return(list(
+      status = "bad_request",
+      message = "Category Name and Description must be valid, non-empty and UTF-8 strings"
+    ))
+  }
+
+  if (nchar(category_name) > 50) {
+    return(list(
+      status = "bad_request",
+      message = "Category Name can't exceed 50 characters"
+    ))
+  }
+
+  if (nchar(category_description) > 200) {
+    return(list(
+      status = "bad_request",
+      message = "Category Description can't exceed 200 characters"
+    ))
+  }
+
+  if (is_invalid_utf8(id_category) || !UUIDvalidate(id_category)) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Category ID, can't be null"
+    ))
+  }
+
+  if (!is.null(id_father_category) && (is_invalid_utf8(id_father_category) || !UUIDvalidate(id_father_category))) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Father Category ID"
+    ))
+  }
+
+  id_father_category <- if (is.null(id_father_category)) list(id_father_category) else id_father_category
+
+  edit_category(id_category, category_name, category_description, id_father_category)
+}
+
+# +-----------------------+
+# |    DELETE WITH ID     |
+# +-----------------------+
+
+remove_category <- function(id_category) {
+  tryCatch(
+    {
+      erase_category(id_category)
+
+      return(list(
+        status = "success",
+        message = "Category Deleted Successfully"
+      ))
+    },
+    error = function(e) {
+      constraint_name <- find_matching_constraint_pgsql(e$message)
+
+      if (!is.null(constraint_name)) {
+        return(constraint_violation_response(constraint_name))
+      }
+
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message)
+      )
+    }
+  )
+}
+
+delete_category_with_id <- function(req, id_category) {
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
+    error = function(e) {
+      NULL
+    }
+  )
+  if (is.null(user_role) || user_role != "admin") {
+    return(list(
+      status = "unauthorized",
+      message = "To delete a category, you must be an administrator"
+    ))
+  }
+
+  if (is_invalid_utf8(id_category) || !UUIDvalidate(id_category)) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid Category ID, can't be null"
+    ))
+  }
+
+  remove_category(id_category)
 }

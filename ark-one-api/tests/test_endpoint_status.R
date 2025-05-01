@@ -16,8 +16,8 @@ ping_request <- function() {
   GET(paste0(base_url, "/Status/ping"))
 }
 
-solar_panel_values_request <- function() {
-  GET(paste0(base_url, "/Status/recent_values/solar_panel"))
+solar_tracker_values_request <- function() {
+  GET(paste0(base_url, "/Status/recent_values/solar_tracker"))
 }
 
 # Function designed to test the status endpoint
@@ -34,11 +34,11 @@ status_ping_tests <- function() {
 }
 
 # Function designed to test the solar panel values endpoint
-status_solar_panel_values_tests <- function() {
-  message("Testing GET (/Status/recent_values/solar_panel) ...")
+status_solar_tracker_values_tests <- function() {
+  message("Testing GET (/Status/recent_values/solar_tracker) ...")
 
   test_that("Solar Panel values should return 503", {
-    response <- solar_panel_values_request()
+    response <- solar_tracker_values_request()
     content <- content(response, as = "parsed", simplifyVector = TRUE)
 
     expect_equal(status_code(response), 503)
@@ -48,4 +48,4 @@ status_solar_panel_values_tests <- function() {
 }
 
 status_ping_tests()
-status_solar_panel_values_tests()
+status_solar_tracker_values_tests()

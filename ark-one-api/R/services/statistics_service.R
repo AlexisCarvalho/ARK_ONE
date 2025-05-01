@@ -4,45 +4,120 @@
 # |                       |
 # +-----------------------+
 
+source("../services/solar_tracker_service.R", chdir = TRUE)
 source("../models/statistics_model.R", chdir = TRUE)
 source("../utils/response_handler.R", chdir = TRUE)
 source("../utils/request_handler.R", chdir = TRUE)
 source("../utils/utils.R", chdir = TRUE)
 
-get_esp32_summary_today_by_instance <- function(id_product_instance) {
-  if (is.null(id_product_instance)) {
+# +-----------------------+
+# |    HELP FUNCTIONS     |
+# +-----------------------+
+
+calculate_correlation <- function(vector1, vector2) {
+  if (is.null(vector1) || is.null(vector2) ||
+      length(vector1) != length(vector2) || length(vector1) < 2) {
     return(list(
       status = "bad_request",
-      message = "The product instance id cannot be null",
-      data = list(summary = NULL)
+      message = "Invalid vectors. Ensure they have the same length and sufficient data points.",
+      data = list(correlation = NULL)
     ))
   }
 
-  result <- tryCatch(
+  corr_value <- cor(vector1, vector2, use = "complete.obs")
+
+  list(
+    status = "success",
+    message = "Correlation successfully calculated.",
+    data = list(correlation = corr_value)
+  )
+}
+
+decompose_time_series <- function(series_data, frequency) {
+  if (is.null(series_data) || length(series_data) < 2) {
+    return(list(
+      status = "bad_request",
+      message = "Insufficient data points to decompose time series.",
+      data = list(decomposition = NULL)
+    ))
+  }
+
+  if (frequency <= 0) {
+    return(list(
+      status = "bad_request",
+      message = "Invalid frequency. Must be a positive number.",
+      data = list(decomposition = NULL)
+    ))
+  }
+
+  if (any(is.na(series_data))) {
+    return(list(
+      status = "bad_request",
+      message = "Series contains NA values. Please clean your data.",
+      data = list(decomposition = NULL)
+    ))
+  }
+
+  if (length(series_data) < frequency) {
+    return(list(
+      status = "bad_request",
+      message = "Not enough data points for the specified frequency.",
+      data = list(decomposition = NULL)
+    ))
+  }
+
+  ts_data <- ts(series_data, frequency = frequency)
+  decomposed_data <- decompose(ts_data)
+
+  list(
+    status = "success",
+    message = "Time series decomposition successfully generated.",
+    data = list(
+      trend = decomposed_data$trend,
+      seasonal = decomposed_data$seasonal,
+      random = decomposed_data$random
+    )
+  )
+}
+
+# +-------------------------+
+# |       STATISTICS        |
+# +-------------------------+
+
+get_esp32_summary_today <- function(id_product_instance) {
+  if (is_invalid_utf8(id_product_instance) || !UUIDvalidate(id_product_instance)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid Product ID",
+      data = list(category = NULL)
+    ))
+  }
+
+  esp32_data <- tryCatch(
     fetch_esp32_data_today_by_instance(id_product_instance),
-    error = function(e) {
-      return(list(
-        status = "internal_server_error",
-        message = paste("Unexpected Error:", e$message),
-        data = list(summary = NULL)
-      ))
-    }
+    error = function(e) e
   )
 
-  if (!is.data.frame(result) || nrow(result) == 0) {
+  if (inherits(esp32_data, "error")) {
     return(list(
-      status = "not_found",
-      message = "No ESP32 data found for this product instance today",
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", esp32_data$message),
       data = list(summary = NULL)
     ))
   }
 
-  # Parse campos common_data JSON e extrai como numérico
-  parsed_common <- lapply(result$common_data, fromJSON)
+  if (!is.data.frame(esp32_data) || nrow(esp32_data) == 0) {
+    return(list(
+      status = "not_found",
+      message = "No ESP32 data found for this Product ID today",
+      data = list(summary = NULL)
+    ))
+  }
+
+  parsed_common <- lapply(esp32_data$common_data, fromJSON)
   voltages <- as.numeric(sapply(parsed_common, function(x) x$voltage))
   currents <- as.numeric(sapply(parsed_common, function(x) x$current))
 
-  # Cálculo dos watts
   wattages <- voltages * currents
   mean_wattage <- mean(wattages)
 
@@ -62,9 +137,63 @@ get_esp32_summary_today_by_instance <- function(id_product_instance) {
     MeanWattage = mean_wattage
   )
 
-  return(list(
+  list(
     status = "success",
     message = "ESP32 data summary successfully generated",
     data = list(summary = data_summary)
-  ))
+  )
+}
+
+get_solar_tracker_mem_volt_curr_correlation <- function(id_product_instance) {
+  if (is_invalid_utf8(id_product_instance) || !UUIDvalidate(id_product_instance)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid Product ID",
+      data = list(category = NULL)
+    ))
+  }
+
+  solar_tracker_data <- get_data_by_instance_from_memory(id_product_instance)
+
+  if (!is.data.table(solar_tracker_data) || nrow(solar_tracker_data) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There isn't any data with this id in the memory",
+      data = list(category = NULL)
+    ))
+  }
+
+  calculate_correlation(solar_tracker_data$voltage, solar_tracker_data$current)
+}
+
+get_solar_tracker_mem_volt_trend_detection <- function(id_product_instance, frequency) {
+  if (is_invalid_utf8(id_product_instance) || !UUIDvalidate(id_product_instance)) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid Product ID",
+      data = list(category = NULL)
+    ))
+  }
+
+  validation_result <- validate_and_convert_numeric_fields(
+    converted_frequency = frequency
+  )
+
+  if (validation_result$status != "success") {
+    return(validation_result)
+  }
+
+  solar_tracker_data <- get_data_by_instance_from_memory(id_product_instance)
+
+  if (!is.data.table(solar_tracker_data) || nrow(solar_tracker_data) == 0) {
+    return(list(
+      status = "not_found",
+      message = "There isn't any data with this id in the memory",
+      data = list(category = NULL)
+    ))
+  }
+
+  with(validation_result$data,
+    decompose_time_series(solar_tracker_data$voltage, converted_frequency)
+  )
 }

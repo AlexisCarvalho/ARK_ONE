@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');

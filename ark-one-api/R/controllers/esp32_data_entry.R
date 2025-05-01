@@ -4,8 +4,8 @@
 # |                       |
 # +-----------------------+
 
-source("../services/solar_panel_service.R", chdir = TRUE)
-source("../services/location_data_service.R", chdir = TRUE)
+source("../services/solar_tracker_service.R", chdir = TRUE)
+source("../services/location_service.R", chdir = TRUE)
 source("../utils/response_handler.R", chdir = TRUE)
 
 #* Stores the values entered with the treatment of the data and the proper analysis of their fluctuation
@@ -22,47 +22,18 @@ source("../utils/response_handler.R", chdir = TRUE)
 #* @param esp32_core_temperature esp32_core_temperature
 #* @param voltage voltage
 #* @param current current
-#* @post /send_data/solar_panel
-function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current){
-  send_http_response(res, send_data_solar_panel(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current))
+#* @post /solar_tracker/send_data
+function(res, esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current) {
+  send_http_response(res, send_data_solar_tracker(esp32_unique_id, max_elevation, min_elevation, servo_tower_angle, solar_panel_temperature, esp32_core_temperature, voltage, current))
 }
 
+#* Receive location and time data for a specific ESP32
 #* @tag ESP32_DataEntry
-#* @param esp32_unique_id
-#* @get /receive_data/solar_panel
+#* @param esp32_unique_id The unique ID of the ESP32
+#* @get /solar_tracker/receive_data
+#* @response 200 Returns location and time data
+#* @response 400 Bad Request if the ESP32 ID is invalid
+#* @response 500 Internal Server Error
 function(res, esp32_unique_id) {
-  current_time <- Sys.time()
-  current_date <- as.POSIXlt(current_time)
-
-  location_informs <- return_location_of_ESP32_using_id(esp32_unique_id)
-
-  response <- list(
-    year = current_date$year + 1900,
-    month = current_date$mon + 1,
-    day = current_date$mday,
-    hour = current_date$hour,
-    minute = current_date$min,
-    second = current_date$sec,
-    latitude = 0,
-    longitude = 0
-  )
-
-  if(location_informs$status == "error")
-  {
-    res$status <- 400
-    return(list(status = location_informs$status, message = location_informs$message))
-  }
-
-  if(nrow(location_informs$data) == 0)
-  {
-    res$status <- 200
-    return(response)
-  }
-  else
-  {
-    response$latitude = location_informs$data$latitude
-    response$longitude = location_informs$data$longitude
-    res$status <- 200
-    return(response)
-  }
+  send_http_response(res, receive_data_solar_tracker(esp32_unique_id))
 }

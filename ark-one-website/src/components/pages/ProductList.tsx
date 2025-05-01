@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Box, Card, CardContent, Grid, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 
 interface Product {
   id_product: number;

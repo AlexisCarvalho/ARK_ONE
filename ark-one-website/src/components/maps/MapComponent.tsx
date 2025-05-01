@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import { Button, Box, TextField, Container, Alert } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../../api';
 import pokebolaIcon from '../assets/icons/alarcon.jpeg';
 
 const customIcon = L.icon({

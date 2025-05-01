@@ -2,7 +2,22 @@ source("request_handler.R", chdir = TRUE)
 source("response_handler.R", chdir = TRUE)
 source("token_handler.R", chdir = TRUE)
 
-authenticate <- function(req, res) {
+cors_filter <- function(req, res) {
+  res$setHeader("Access-Control-Allow-Origin", "*")
+  res$setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  res$setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  res$setHeader("Access-Control-Allow-Credentials", "true")
+
+  if (req$REQUEST_METHOD == "OPTIONS") {
+    res$status <- 200
+    res$body <- ""
+    return(res)
+  }
+
+  plumber::forward()
+}
+
+authenticate_filter <- function(req, res) {
   if (grepl("/__swagger__/", req$PATH_INFO)) {
     forward()
   }

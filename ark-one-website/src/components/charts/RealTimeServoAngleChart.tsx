@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../api';
+import api from '../../api';
 
-interface TodayVoltageChartProps {
+interface RealTimeChartProps {
   id_product_instance: number;
 }
 
-const TodayVoltageChart: React.FC<TodayVoltageChartProps> = ({ id_product_instance }) => {
+const RealTimeServoTowerAngleChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [previousImgUrl, setPreviousImgUrl] = useState<string | null>(null);
@@ -16,7 +16,7 @@ const TodayVoltageChart: React.FC<TodayVoltageChartProps> = ({ id_product_instan
       setLoading(true);
 
       const response = await api.get(
-        `Analytics/generateVoltageZScoreGraph?id_product_instance=${id_product_instance}`,
+        `Analytics/generateServoTowerAngleTrendGraph?id_product_instance=${id_product_instance}`,
         { responseType: 'blob' }
       );
 
@@ -54,13 +54,27 @@ const TodayVoltageChart: React.FC<TodayVoltageChartProps> = ({ id_product_instan
   return (
     <Box>
       <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-        Variação da Voltagem
+        Variação do Ângulo da Torre
       </Typography>
       <Box position="relative" width="100%">
+        {previousImgUrl && (
+          <img
+            src={previousImgUrl}
+            alt="Gráfico de Ângulo de Torre Anterior"
+            style={{
+              width: '100%',
+              height: 'auto',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              opacity: 0.5,
+            }}
+          />
+        )}
         {imgUrl ? (
           <img
             src={imgUrl}
-            alt="Gráfico de Voltagem"
+            alt="Gráfico de Ângulo de Torre"
             style={{ width: '100%', height: 'auto' }}
           />
         ) : loading ? (
@@ -77,4 +91,4 @@ const TodayVoltageChart: React.FC<TodayVoltageChartProps> = ({ id_product_instan
   );
 };
 
-export default TodayVoltageChart;
+export default RealTimeServoTowerAngleChart;

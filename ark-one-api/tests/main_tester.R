@@ -1,4 +1,4 @@
-setwd("C:\\Users\\Alexis\\Documents\\Fatec\\Github\\ARK_ONE\\ark-one-api")
+setwd("C:\\Users\\White\\Documents\\Fatec\\Github\\ARK_ONE\\ark-one-api")
 
 source("tests/test_endpoint_account.R", chdir = TRUE)
 source("tests/test_endpoint_products.R", chdir = TRUE)
