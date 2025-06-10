@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP32 WebSocket Receiver</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      margin-bottom: 2em;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    .device-block {
+      margin-bottom: 2em;
+      border: 1px solid #aaa;
+      padding: 1em;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .metadata {
+      font-size: 0.95em;
+      color: #444;
+      margin-bottom: 0.5em;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Teste WebSocket</h1>
+  <pre id="log"></pre>
+  <div id="device-data"></div>
+
+  <script>
+    const log = (msg) => {
+      document.getElementById("log").textContent += msg + "\n";
+    };
+
+    const ws = new WebSocket("ws://localhost:8080/ws");
+
+    ws.onopen = () => {
+      log("✅ Conexão aberta");
+      ws.send(JSON.stringify({
+        type: "request_data",
+        payload: {
+          esp32_ids: ["esp32_001", "esp32_003"]
+        }
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "device_data" && Array.isArray(data.data)) {
+        renderDeviceData(data.data);
+      } else {
+        log("📦 Dados recebidos:\n" + JSON.stringify(data, null, 2));
+      }
+    };
+
+    ws.onerror = (err) => {
+      log("❌ Erro: " + err.message);
+    };
+
+    ws.onclose = () => {
+      log("🔌 Conexão encerrada");
+    };
+
+    function renderDeviceData(devices) {
+      const container = document.getElementById("device-data");
+      container.innerHTML = ""; // Clear previous data
+
+      devices.forEach(device => {
+        const block = document.createElement("div");
+        block.className = "device-block";
+
+        // Metadata
+        const meta = device.metadata || {};
+        const metaDiv = document.createElement("div");
+        metaDiv.className = "metadata";
+        metaDiv.innerHTML = `<b>ESP32 ID:</b> ${device.esp32_id}<br>
+          <b>IDProductInstance:</b> ${meta.IDProductInstance || "-"}<br>
+          <b>InsertCount:</b> ${meta.InsertCount ?? "-"}<br>`;
+        block.appendChild(metaDiv);
+
+        // Data Table
+        if (Array.isArray(device.data) && device.data.length > 0) {
+          const table = document.createElement("table");
+          const thead = document.createElement("thead");
+          thead.innerHTML = `<tr>
+            <th>#</th>
+            <th>Max Elevation</th>
+            <th>Min Elevation</th>
+            <th>Servo Tower Angle</th>
+            <th>Solar Panel Temp</th>
+            <th>ESP32 Core Temp</th>
+            <th>Voltage</th>
+            <th>Current</th>
+            <th>Created At</th>
+          </tr>`;
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          device.data.forEach((row, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${idx + 1}</td>
+              <td>${row.max_elevation}</td>
+              <td>${row.min_elevation}</td>
+              <td>${row.servo_tower_angle}</td>
+              <td>${row.solar_panel_temp}</td>
+              <td>${row.esp32_core_temp}</td>
+              <td>${row.voltage}</td>
+              <td>${row.current}</td>
+              <td>${row.created_at ?? "-"}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          block.appendChild(table);
+        } else {
+          const noData = document.createElement("div");
+          noData.textContent = "Sem dados disponíveis.";
+          block.appendChild(noData);
+        }
+
+        container.appendChild(block);
+      });
+    }
+  </script>
+</body>
+
+</html>

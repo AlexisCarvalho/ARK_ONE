@@ -1,0 +1,429 @@
+/* Copy all styles from exampleProducts.html and replace <style> content */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.container {
+    min-height: 100vh;
+    position: relative;
+}
+
+.background-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.shape {
+    position: absolute;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    border-radius: 50%;
+    opacity: 0.15; /* Aumentei a opacidade de 0.06 para 0.15 */
+}
+
+.shape-1 {
+    width: 250px;
+    height: 250px;
+    top: 10%;
+    left: -50px;
+}
+
+.shape-2 {
+    width: 180px;
+    height: 180px;
+    top: 60%;
+    right: -40px;
+}
+
+.shape-3 {
+    width: 300px;
+    height: 300px;
+    bottom: -100px;
+    left: 20%;
+}
+
+.shape-4 {
+    width: 200px;
+    height: 200px;
+    top: 30%;
+    right: 15%;
+}
+
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.floating-icon {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: white;
+    box-shadow: 0 6px 25px rgba(248, 87, 0, 0.15);
+}
+
+.icon-1 { top: 20%; left: 8%; }
+.icon-2 { top: 70%; right: 12%; }
+.icon-3 { top: 45%; left: 90%; }
+.icon-4 { bottom: 25%; left: 5%; }
+
+.header {
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    position: relative;
+    border-bottom: 1px solid rgba(248, 87, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.logo {
+    font-size: 2rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-input {
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    width: 250px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #F85700;
+    box-shadow: 0 0 0 3px rgba(248, 87, 0, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.main-content {
+    padding: 1rem;
+    z-index: 10;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: -1rem;
+    margin-top: -8rem; /* Adicionado para mover todo o conteúdo para cima */
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    padding-top: 1rem; /* Reduzido o padding superior */
+}
+
+.page-title {
+    font-size: 2.5rem; /* Reduzido tamanho para melhor proporção */
+    font-weight: bold;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem; /* Reduzido o espaço entre título e subtítulo */
+}
+
+.page-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem; /* Reduzi de 2rem para 1.5rem */
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 1rem; /* Reduzi de 3rem para 1rem */
+}
+
+.product-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem; /* Reduzi de 2rem para 1.5rem */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(248, 87, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.product-id {
+    font-size: 0.8rem;
+    color: #999;
+    background: #f8f9fa;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-family: monospace;
+}
+
+.location-badge {
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.location-badge.not-dependent {
+    background: #28a745;
+}
+
+.product-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.product-description {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+
+.product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-price {
+    font-size: 1.75rem;
+    font-weight: bold;
+    color: #F85700;
+}
+
+.currency {
+    font-size: 1rem;
+    color: #999;
+}
+
+.product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.add-to-cart-btn, .view-products-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.add-to-cart-btn {
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    color: white;
+    border: none;
+}
+
+.view-products-btn {
+    background: white;
+    color: #F85700;
+    border: 2px solid #F85700;
+}
+
+.delete-btn {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(45deg, #d32f2f, #b71c1c);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #F85700;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-title {
+    font-size: 1.5rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.empty-subtitle {
+    color: #999;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .search-input {
+        width: 200px;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .main-content {
+        padding: 0.5rem; /* Reduzi de 1rem para 0.5rem */
+        margin-top: -1rem; /* Ajustado para mobile */
+    }
+
+    .page-header {
+        margin-bottom: 1rem; /* Reduzi de 2rem para 1rem */
+    }
+
+    .products-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem; /* Reduzi de 1.5rem para 1rem */
+    }
+
+    .product-card {
+        padding: 1.5rem;
+    }
+
+    .products-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .main-content {
+        padding: 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .product-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .product-actions {
+        width: 100%;
+    }
+}

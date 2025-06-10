@@ -1,0 +1,325 @@
+.login-container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    justify-content: center; /* Add this */
+    align-items: center; /* Add this */
+    z-index: 1; /* Add this */
+}
+
+.background-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0; /* Lower z-index */
+}
+
+.shape {
+    position: absolute;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    border-radius: 50%;
+    opacity: 0.08;
+}
+
+.shape-1 { width: 300px; height: 300px; top: -50px; left: -100px; }
+.shape-2 { width: 200px; height: 200px; top: 70%; right: -50px; }
+.shape-3 { width: 150px; height: 150px; bottom: 10%; left: 10%; }
+.shape-4 { width: 400px; height: 400px; top: 20%; right: -150px; }
+
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.floating-icon {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    box-shadow: 0 8px 32px rgba(248, 87, 0, 0.2);
+}
+
+.icon-1 { top: 15%; left: 5%; }
+.icon-2 { top: 80%; right: 10%; }
+.icon-3 { top: 50%; left: 85%; }
+
+.left-section,
+.right-section {
+    flex: 0.8; /* Change from 1 to 0.8 to make sections narrower */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    z-index: 10;
+    position: relative;
+    max-width: 600px; /* Add this to limit width */
+}
+
+.brand-section {
+    text-align: center;
+    max-width: 400px;
+    padding: 0 2rem; /* Add padding */
+}
+
+.logo {
+    font-size: 3rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 2rem;
+}
+
+.brand-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.brand-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.features-list {
+    text-align: left;
+    color: #555;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.feature-icon {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    border-radius: 50%;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.login-form-container {
+    background: white;
+    padding: 4rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px; /* Reduce from 450px */
+    border: 1px solid rgba(248, 87, 0, 0.1);
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.form-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+    color: #666;
+    font-size: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #F85700;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(248, 87, 0, 0.1);
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 0.5rem;
+    accent-color: #F85700;
+}
+
+.forgot-password {
+    color: #F85700;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(248, 87, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.login-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(248, 87, 0, 0.4);
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.divider {
+    text-align: center;
+    margin: 2rem 0;
+    position: relative;
+    color: #999;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e9ecef;
+}
+
+.divider span {
+    background: white;
+    padding: 0 1rem;
+    position: relative;
+}
+
+.signup-link {
+    text-align: center;
+    color: #666;
+}
+
+.signup-link a {
+    color: #F85700;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    color: #dc3545;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+    .login-container {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .left-section {
+        display: none;
+    }
+    
+    .right-section {
+        padding: 1rem;
+        max-width: 100%; /* Add this */
+    }
+    
+    .login-form-container {
+        padding: 2rem;
+        margin: 1rem;
+        width: 90%; /* Add this */
+    }
+}

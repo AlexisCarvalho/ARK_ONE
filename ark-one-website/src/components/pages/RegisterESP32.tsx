@@ -57,7 +57,7 @@ const RegisterESP32: React.FC = () => {
     }
 
     try {
-      await api.post('/Person/products/register', {
+      await api.post('Products/owned', {
         id_product,
         esp32_unique_id: esp32Id,
       });

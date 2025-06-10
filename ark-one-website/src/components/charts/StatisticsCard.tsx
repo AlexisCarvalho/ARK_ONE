@@ -1,38 +1,52 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import api from '../../api';
 
 interface StatisticsCardProps {
-  id_product_instance: number;
+  esp32_unique_id: string;
 }
 
-const StatisticsCard: React.FC<StatisticsCardProps> = ({ id_product_instance }) => {
-  const [statistics, setStatistics] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+interface ESPDataPoint {
+  timestamp: string;
+  max_elevation: number;
+  min_elevation: number;
+  servo_tower_angle: number;
+  solar_panel_temperature: number;
+  esp32_core_temperature: number;
+  voltage: number;
+  current: number;
+}
 
-  const fetchStatisticsData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`Statistics/summary?id_product_instance=${id_product_instance}`);
-      
-      if (response.data.status[0] === 'success') {
-        setStatistics(response.data.data[0]);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error("Erro ao buscar as estatísticas:", error);
-      setLoading(false);
-    }
-  }, [id_product_instance]);  
+const StatisticsCard: React.FC<StatisticsCardProps> = ({ esp32_unique_id }) => {
+  const [latestData, setLatestData] = useState<ESPDataPoint | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const ws = useMemo(() => new WebSocket("ws://localhost:8081"), []);
 
   useEffect(() => {
-    fetchStatisticsData();  
-    const interval = setInterval(() => {
-      fetchStatisticsData();
-    }, 8000);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ request_esp32_ids: [esp32_unique_id] }));
+    };
 
-    return () => clearInterval(interval);
-  }, [fetchStatisticsData]);  
+    ws.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.type === "device_data") {
+        const device = payload.data.find((d: any) => d.esp32_id === esp32_unique_id);
+        if (device && device.data && device.data.length > 0) {
+          const mostRecent = device.data[device.data.length - 1];
+          setLatestData(mostRecent);
+          setLoading(false);
+        }
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [ws, esp32_unique_id]);
 
   return (
     <Box
@@ -44,30 +58,21 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({ id_product_instance }) 
         boxShadow: 0,
       }}
     >
-      {loading ? (
+      {loading || !latestData ? (
         <Box display="flex" justifyContent="center" alignItems="center" height="100%">
           <CircularProgress />
         </Box>
-      ) : statistics ? (
-        <Box>
-          <Typography variant="body2" color="black">Média de Voltagem: {statistics.MeanVoltages.toFixed(2)} V</Typography>
-          <Typography variant="body2" color="black">Mediana de Voltagem: {statistics.MedianVoltages.toFixed(2)} V</Typography>
-          <Typography variant="body2" color="black">Desvio Padrão de Voltagem: {statistics.SDVoltages.toFixed(2)} V</Typography>
-          <Typography variant="body2" color="black">IQR de Voltagem: {statistics.IQRVoltages.toFixed(2)} V</Typography>
-          <Typography variant="body2" color="black">Assimetria de Voltagem: {statistics.SkewnessVoltages.toFixed(2)}</Typography>
-          <Typography variant="body2" color="black">Curtose de Voltagem: {statistics.KurtosisVoltages.toFixed(2)}</Typography>
-          
-          <Typography variant="body2" color="black" sx={{ mt: 2 }}>Média de Corrente: {statistics.MeanCurrents.toFixed(2)} A</Typography>
-          <Typography variant="body2" color="black">Mediana de Corrente: {statistics.MedianCurrents.toFixed(2)} A</Typography>
-          <Typography variant="body2" color="black">Desvio Padrão de Corrente: {statistics.SDCurrent.toFixed(2)} A</Typography>
-          <Typography variant="body2" color="black">IQR de Corrente: {statistics.IQRCurrents.toFixed(2)} A</Typography>
-          <Typography variant="body2" color="black">Assimetria de Corrente: {statistics.SkewnessCurrents.toFixed(2)}</Typography>
-          <Typography variant="body2" color="black">Curtose de Corrente: {statistics.KurtosisCurrents.toFixed(2)}</Typography>
-          
-          <Typography variant="body2" color="black" sx={{ mt: 2 }}>Média de Potência: {statistics.MeanWattage.toFixed(2)} W</Typography>
-        </Box>
       ) : (
-        <Typography variant="body2" color="black">Nenhuma estatística disponível.</Typography>
+        <Box>
+          <Typography variant="body2" color="black">Tensão: {latestData.voltage.toFixed(2)} V</Typography>
+          <Typography variant="body2" color="black">Corrente: {latestData.current.toFixed(2)} A</Typography>
+          <Typography variant="body2" color="black">Temp. Painel Solar: {latestData.solar_panel_temperature.toFixed(2)} °C</Typography>
+          <Typography variant="body2" color="black">Temp. Núcleo ESP32: {latestData.esp32_core_temperature.toFixed(2)} °C</Typography>
+          <Typography variant="body2" color="black">Ângulo Torre Servo: {latestData.servo_tower_angle.toFixed(2)}°</Typography>
+          <Typography variant="body2" color="black">Elevação Máxima: {latestData.max_elevation.toFixed(2)}°</Typography>
+          <Typography variant="body2" color="black">Elevação Mínima: {latestData.min_elevation.toFixed(2)}°</Typography>
+          <Typography variant="body2" color="black" sx={{ mt: 2 }}>Timestamp: {latestData.timestamp}</Typography>
+        </Box>
       )}
     </Box>
   );

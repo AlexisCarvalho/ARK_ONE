@@ -54,7 +54,7 @@ fetch_products_owned <- function(user_id) {
   on.exit(pool_return(con), add = TRUE)
 
   query <- "
-      SELECT pi.id_product_instance, p.product_name, p.product_description, pi.esp32_unique_id
+      SELECT pi.id_product_instance, pi.esp32_unique_id, p.product_name, p.location_dependent
       FROM product_instance pi
       JOIN products p ON pi.id_product = p.id_product
       WHERE pi.id_user = $1"
@@ -80,7 +80,7 @@ fetch_products_owned_with_id <- function(user_id, product_id) {
   on.exit(pool_return(con), add = TRUE)
 
   query <- "
-      SELECT p.*
+      SELECT pi.id_product_instance, pi.esp32_unique_id, p.product_name, p.location_dependent
       FROM products p
       JOIN product_instance pi ON p.id_product = pi.id_product
       WHERE pi.id_user = $1 AND pi.id_product = $2"

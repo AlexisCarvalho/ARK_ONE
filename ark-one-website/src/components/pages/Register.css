@@ -1,0 +1,145 @@
+.register-container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+/* ...existing background-shapes and shape styles from Login.css... */
+
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.floating-icon {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FFA901, #F85700); /* Reversed gradient */
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    box-shadow: 0 8px 32px rgba(248, 87, 0, 0.2);
+}
+
+/* Mirror the icon positions */
+.icon-1 { top: 15%; right: 5%; }
+.icon-2 { top: 80%; left: 10%; }
+.icon-3 { top: 50%; right: 85%; }
+
+.left-section,
+.right-section {
+    flex: 0.8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    z-index: 10;
+    position: relative;
+    max-width: 600px;
+}
+
+.left-section {
+    order: 2;
+}
+
+.right-section {
+    order: 1;
+}
+
+/* ...existing brand-section styles from Login.css... */
+
+.register-form-container {
+    background: white;
+    padding: 4rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid rgba(248, 87, 0, 0.1);
+}
+
+/* ...existing form-header, form-title, form-subtitle styles from Login.css... */
+
+.register-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #FFA901, #F85700); /* Reversed gradient */
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(248, 87, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.register-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.register-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(248, 87, 0, 0.4);
+}
+
+/* ...existing loading, divider styles from Login.css... */
+
+.login-link {
+    text-align: center;
+    color: #666;
+}
+
+.login-link a {
+    color: #F85700;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+    .register-container {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .right-section {
+        display: none;
+    }
+    
+    .left-section {
+        order: 1;
+        padding: 1rem;
+        max-width: 100%;
+    }
+    
+    .register-form-container {
+        padding: 2rem;
+        margin: 1rem;
+        width: 90%;
+    }
+}

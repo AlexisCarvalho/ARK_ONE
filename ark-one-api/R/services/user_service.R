@@ -265,7 +265,7 @@ get_users_role <- function(req) {
       list(
         status = "success",
         message = "User role successfully retrieved",
-        data = list(user_role = user_role)
+        data = user_role
       )
     },
     error = function(e) {

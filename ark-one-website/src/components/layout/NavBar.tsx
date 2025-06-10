@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { AppBar, Toolbar, Button, Typography, Box } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api';
+import './NavBar.css';
 
 const NavBar: React.FC = () => {
   const location = useLocation();
@@ -10,8 +10,8 @@ const NavBar: React.FC = () => {
 
   const fetchUserType = async () => {
     try {
-      const response = await api.get('/Person/getType');
-      setIsAdmin(response.data.data[0] === 'admin');
+      const response = await api.get('/Users/role');
+      setIsAdmin(response.data.data[0].user_role === 'admin');
     } catch (error) {
       console.error('Erro ao obter o tipo de usuário', error);
       setIsAdmin(false);
@@ -19,67 +19,55 @@ const NavBar: React.FC = () => {
   };
 
   useEffect(() => {
-    if (location.pathname === '/products') {
+    if (location.pathname === '/productList') {
       fetchUserType();
     }
   }, [location.pathname]);
 
-  const isDashboard = location.pathname === '/dashboard';
+  const hideNavBar = location.pathname === '/dashboard' || location.pathname === '/login' || location.pathname === '/register';
 
-  if (isDashboard) {
+  if (hideNavBar) {
     return null;
   }
 
-  const handleBackButtonClick = () => {
-    const previousLocation = location.state?.previousLocation || '/products';
-    navigate(previousLocation, { state: { additionalData: 'data to send' } });
-  };
-
   return (
-    <AppBar
-      position="static"
-      sx={{
-        background: 'linear-gradient(90deg, #F85700, #FFA901)',
-      }}
-    >
-      <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Ark One - Energia Renovável
-        </Typography>
-        <Box>
-          {location.pathname === '/register' && (
-            <Button color="inherit" component={Link} to="/login">
+    <header className="header">
+      <div className="logo">Ark One</div>
+      <nav>
+        <div className="nav-buttons">
+          {(location.pathname === '/register' || location.pathname === '/') && (
+            <button className="btn btn-secondary" onClick={() => navigate('/login')}>
               Login
-            </Button>
+            </button>
           )}
-          {location.pathname === '/login' && (
-            <Button color="inherit" component={Link} to="/register">
+          {(location.pathname === '/login' || location.pathname === '/') && (
+            <button className="btn btn-primary" onClick={() => navigate('/register')}>
               Se Cadastrar
-            </Button>
+            </button>
           )}
-          {isAdmin && location.pathname === '/products' && (
-            <Button color="inherit" component={Link} to="/registerProduct">
+          {isAdmin && location.pathname === '/productList' && (
+            <button className="btn btn-primary" onClick={() => navigate('/registerProduct')}>
               Cadastrar Produto
-            </Button>
+            </button>
           )}
           {isAdmin && location.pathname === '/registerProduct' && (
-            <Button color="inherit" component={Link} to="/registerCategory">
+            <button className="btn btn-primary" onClick={() => navigate('/registerCategory')}>
               Cadastrar Nova Categoria
-            </Button>
-          )}
-          {location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register' && location.pathname !== '/setLocationMap' && location.pathname !== '/products' && (
-            <Button color="inherit" onClick={handleBackButtonClick}>
-              Voltar
-            </Button>
+            </button>
           )}
           {location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register' && (
-            <Button color="inherit" component={Link} to="/">
-              Sair
-            </Button>
+            <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+              Voltar
+            </button>
           )}
-        </Box>
-      </Toolbar>
-    </AppBar>
+          {location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register' && (
+            <button className="btn btn-primary" onClick={() => navigate('/')}>
+              Sair
+            </button>
+          )}
+        </div>
+      </nav>
+    </header>
   );
 };
 

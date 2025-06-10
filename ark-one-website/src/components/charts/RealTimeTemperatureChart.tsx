@@ -3,10 +3,10 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import api from '../../api';
 
 interface RealTimeChartProps {
-  id_product_instance: number;
+  esp32_unique_id: string;
 }
 
-const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_product_instance }) => {
+const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ esp32_unique_id }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [previousImgUrl, setPreviousImgUrl] = useState<string | null>(null);
@@ -16,7 +16,7 @@ const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_p
       setLoading(true);
 
       const response = await api.get(
-        `Analytics/generateTemperatureGraph?id_product_instance=${id_product_instance}`,
+        `Analytics/generateTemperatureGraph?esp32_unique_id=${esp32_unique_id}`,
         { responseType: 'blob' }
       );
 
@@ -33,12 +33,12 @@ const RealTimeSolarPanelTemperatureChart: React.FC<RealTimeChartProps> = ({ id_p
       console.error("Erro ao buscar dados do gráfico:", error);
       setLoading(false);
     }
-  }, [id_product_instance, imgUrl]);
+  }, [esp32_unique_id, imgUrl]);
 
   useEffect(() => {
     fetchGraphData();
 
-    const interval = setInterval(fetchGraphData, 2000);
+    const interval = setInterval(fetchGraphData, 5000);
 
     return () => {
       clearInterval(interval);

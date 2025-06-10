@@ -1,4 +1,99 @@
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-wrapper {
+  min-height: 100vh;
+  position: relative;
+}
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto; /* Add this */
+}
+
 .leaflet-container {
   height: 100%;
   width: 100%;
+}
+
+/* Global nav-button styles */
+.nav-buttons {
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto !important;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-buttons .btn {
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto !important;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.nav-buttons .btn-primary {
+  background: linear-gradient(90deg, #F85700, #FFA901);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.nav-buttons .btn-secondary {
+  background: white;
+  color: #F85700;
+  border: 2px solid #F85700;
+}
+
+.nav-buttons .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(248, 87, 0, 0.2);
+}
+
+.nav-buttons .btn-primary:hover {
+  background: linear-gradient(90deg, #e04d00, #e69800);
+}
+
+.nav-buttons .btn-secondary:hover {
+  background: linear-gradient(90deg, #F85700, #FFA901);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .nav-buttons {
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+  
+  .nav-buttons .btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
 }

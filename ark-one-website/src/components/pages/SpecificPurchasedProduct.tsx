@@ -24,15 +24,15 @@ const SpecificPurchasedProduct: React.FC = () => {
   useEffect(() => {
     const fetchProductInstances = async () => {
       try {
-        const response = await api.post('Person/products_purchased/specific_one', { id_product });
+        const response = await api.get(`Products/owned/${id_product}`);
 
-        if (response.data.data.length === 0) {
+        if (response.data.data.products_owned.length === 0) {
           setError('Nenhum produto deste tipo cadastrado.');
         } else {
           setError(null);
         }
 
-        setProductInstances(response.data.data);
+        setProductInstances(response.data.data.products_owned);
       } catch (error) {
         console.error(error);
         setError('Erro ao carregar os produtos');
@@ -52,19 +52,20 @@ const SpecificPurchasedProduct: React.FC = () => {
     });
   };
 
-  const handleViewDataAnalysis = (id_product_instance: number) => {
+  const handleViewDataAnalysis = (id_product_instance: number, esp32_unique_id: string) => {
     navigate('/dashboard', {
       state: { 
         previousLocation: window.location.pathname, 
         id_product_instance,
-        id_product
+        id_product,
+        esp32_unique_id
       }
     });
   };
 
   const handleDeleteESP32 = async (esp32_unique_id: string) => {
     try {
-      await api.delete(`Products/delete_ESP32?esp32_unique_id=${esp32_unique_id}`);
+      await api.delete(`Products/owned/${esp32_unique_id}`);
       setProductInstances((prev) =>
         prev.filter((instance) => instance.esp32_unique_id !== esp32_unique_id)
       );
@@ -131,7 +132,7 @@ const SpecificPurchasedProduct: React.FC = () => {
                           backgroundColor: '#28a745',
                           '&:hover': { backgroundColor: '#218838' },
                         }}
-                        onClick={() => handleViewDataAnalysis(productInstance.id_product_instance)}
+                        onClick={() => handleViewDataAnalysis(productInstance.id_product_instance, productInstance.esp32_unique_id)}
                       >
                         Ver Análise
                       </Button>

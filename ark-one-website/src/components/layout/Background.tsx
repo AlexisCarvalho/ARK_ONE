@@ -13,7 +13,7 @@ const Background: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     '/': backgroundEvening,
     '/login': backgroundEvening,
     '/register': backgroundEvening,
-    '/products': backgroundDay,
+    '/productList': backgroundDay,
     '/purchasedProducts': backgroundDay,
     '/specificPurchasedProduct': backgroundAfternoon,
     '/registerESP32': backgroundAfternoon,

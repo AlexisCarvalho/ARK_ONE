@@ -38,10 +38,7 @@ const TodayCurrentChart: React.FC<TodayCurrentChartProps> = ({ id_product_instan
   useEffect(() => {
     fetchGraphData();
 
-    const interval = setInterval(fetchGraphData, 2000);
-
     return () => {
-      clearInterval(interval);
       if (imgUrl) {
         URL.revokeObjectURL(imgUrl);
       }

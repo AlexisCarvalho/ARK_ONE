@@ -202,6 +202,8 @@ This endpoint is used to create a new user account. The user must provide a name
 }
 ```
 
+---
+
 ## /Status
 
 ### **GET** `Status/ping`
@@ -218,6 +220,8 @@ This endpoint is simply to verify in a fast way if the api is running on the cal
   "message": "The API is Running"
 }
 ```
+
+---
 
 ## /Users
 
@@ -406,6 +410,8 @@ This endpoint retrieves information about a specific user in the system. It is p
 }
 ```
 
+---
+
 ## /Products
 
 ### **GET** `Products/get_all`
@@ -579,6 +585,214 @@ This endpoint retrieves all products owned by all users. Requires administrator 
 
 ---
 
+### **GET** `Products/<id_product>`
+
+#### Description
+This endpoint retrieves information about a specific product.
+
+#### Parameters
+| Parameter     | Type   | Required | Description                     |
+|---------------|--------|----------|---------------------------------|
+| `id_product`  | String | TRUE     | The UUID of the product to retrieve |
+
+#### Responses
+
+##### ✅ `200` - Successfully retrieved the product
+```json
+{
+  "status": "success",
+  "message": "Product successfully retrieved",
+  "data": {
+    "product": {
+      "id_product": "UUID",
+      "product_name": "Product_Name",
+      "product_description": "Description",
+      "location_dependent": true,
+      "product_price": 100.0,
+      "id_category": "UUID"
+    }
+  }
+}
+```
+
+##### 🚫 `400` - Missing or invalid product ID
+```json
+{
+  "status": "bad_request",
+  "message": "Missing or Invalid product ID",
+  "data": {
+    "product": {}
+  }
+}
+```
+
+##### 🔍 `404` - Product not found
+```json
+{
+  "status": "not_found",
+  "message": "There isn't any product with this id in the database",
+  "data": {
+    "product": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "product": {}
+  }
+}
+```
+
+---
+
+### **GET** `Products/search`
+
+#### Description
+This endpoint searches for products by name, returning products with similar names.
+
+#### Parameters
+| Parameter | Type   | Required | Description                      |
+|-----------|--------|----------|----------------------------------|
+| `name`    | String | TRUE     | The name of the product to search |
+
+#### Responses
+
+##### ✅ `200` - Products with similar names found
+```json
+{
+  "status": "success",
+  "message": "Products with Similar Names Successfully Retrieved",
+  "data": {
+    "products": [
+      {
+        "id_product": "UUID",
+        "product_name": "Product_Name",
+        "product_description": "Description",
+        "location_dependent": true,
+        "product_price": 100.0,
+        "id_category": "UUID"
+      }
+    ]
+  }
+}
+```
+
+##### 🔍 `404` - No products found with a similar name
+```json
+{
+  "status": "not_found",
+  "message": "There are no products with similar names",
+  "data": {
+    "products": {}
+  }
+}
+```
+
+##### 🚫 `400` - Invalid or missing product name
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Product Name",
+  "data": {
+    "products": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "products": {}
+  }
+}
+```
+
+---
+
+### **GET** `Products/owned/<id_product>`
+
+#### Description
+This endpoint retrieves all instances of a specific product owned by the user making the request.
+
+#### Parameters
+| Parameter     | Type   | Required | Description                     |
+|---------------|--------|----------|---------------------------------|
+| `id_product`  | String | TRUE     | The UUID of the product to retrieve |
+
+#### Responses
+
+##### ✅ `200` - Successfully retrieved the product instances
+```json
+{
+  "status": "success",
+  "message": "Products owned successfully retrieved",
+  "data": {
+    "products_owned": [
+      {
+        "id_product_instance": "UUID",
+        "product_name": "Product_Name",
+        "product_description": "Description",
+        "esp32_unique_id": "ESP32_ID"
+      }
+    ]
+  }
+}
+```
+
+##### 🚫 `400` - Missing or invalid product ID
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Product ID",
+  "data": {
+    "products_owned": {}
+  }
+}
+```
+
+##### 🔒 `401` - Unauthorized, invalid or missing token
+```json
+{
+  "status": "unauthorized",
+  "message": "Failed to identify user, malformed or invalid token",
+  "data": {
+    "products_owned": {}
+  }
+}
+```
+
+##### 🔍 `404` - No product instances found for the user
+```json
+{
+  "status": "not_found",
+  "message": "There are no products owned by this user",
+  "data": {
+    "products_owned": {}
+  }
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error",
+  "data": {
+    "products_owned": {}
+  }
+}
+```
+
+---
+
 ### **POST** `Products/register`
 
 #### Description
@@ -676,55 +890,39 @@ This endpoint registers a product instance under the user's ownership.
 
 ---
 
-### **GET** `Products/<id_product>`
+### **DELETE** `Products/owned/<esp32_unique_id>`
 
 #### Description
-This endpoint retrieves information about a specific product.
+This endpoint deletes a specific product instance owned by the user, identified by the ESP32 unique ID.
 
 #### Parameters
-| Parameter     | Type   | Required | Description                     |
-|---------------|--------|----------|---------------------------------|
-| `id_product`  | String | TRUE     | The UUID of the product to retrieve |
+| Parameter          | Type   | Required | Description                     |
+|--------------------|--------|----------|---------------------------------|
+| `esp32_unique_id`  | String | TRUE     | The unique ESP32 identifier for the product instance |
 
 #### Responses
 
-##### ✅ `200` - Successfully retrieved the product
+##### ✅ `200` - Product instance successfully deleted
 ```json
 {
   "status": "success",
-  "message": "Product successfully retrieved",
-  "data": {
-    "product": {
-      "id_product": "UUID",
-      "product_name": "Product_Name",
-      "product_description": "Description",
-      "location_dependent": true,
-      "product_price": 100.0,
-      "id_category": "UUID"
-    }
-  }
+  "message": "Product Deleted Successfully"
 }
 ```
 
-##### 🚫 `400` - Missing or invalid product ID
+##### 🚫 `400` - Missing or invalid ESP32 ID
 ```json
 {
   "status": "bad_request",
-  "message": "Missing or Invalid product ID",
-  "data": {
-    "product": {}
-  }
+  "message": "Invalid ESP32 ID"
 }
 ```
 
-##### 🔍 `404` - Product not found
+##### 🔒 `401` - Unauthorized, user is not allowed to delete
 ```json
 {
-  "status": "not_found",
-  "message": "There isn't any product with this id in the database",
-  "data": {
-    "product": {}
-  }
+  "status": "unauthorized",
+  "message": "To delete a product on your name, you must be a moderator or higher"
 }
 ```
 
@@ -732,12 +930,11 @@ This endpoint retrieves information about a specific product.
 ```json
 {
   "status": "internal_server_error",
-  "message": "Unexpected Error: depends_on_the_error",
-  "data": {
-    "product": {}
-  }
+  "message": "Unexpected Error: depends_on_the_error"
 }
 ```
+
+---
 
 ## /Categories
 
@@ -785,54 +982,6 @@ This endpoint retrieves all categories available in the system.
   "data": {
     "categories": {}
   }
-}
-```
-
----
-
-### **POST** `Categories/create`
-
-#### Description
-This endpoint is used to create a new category. Requires administrator privileges.
-
-#### Parameters
-| Parameter             | Type   | Required | Description                                    |
-|-----------------------|--------|----------|------------------------------------------------|
-| `category_name`       | String | TRUE     | The name of the category                      |
-| `category_description`| String | TRUE     | The description of the category               |
-| `id_father_category`  | String | FALSE    | The ID of the parent category (optional)      |
-
-#### Responses
-
-##### 🆕 `201` - Category successfully registered
-```json
-{
-  "status": "created",
-  "message": "Category Registered Successfully"
-}
-```
-
-##### 🚫 `400` - Invalid or missing parameters
-```json
-{
-  "status": "bad_request",
-  "message": "Category Name and Description must be valid, non-empty and UTF-8 strings"
-}
-```
-
-##### 🔒 `401` - Unauthorized, user is not an admin
-```json
-{
-  "status": "unauthorized",
-  "message": "To register a category, you must be an administrator"
-}
-```
-
-##### 💥 `500` - Unexpected Error on Server-Side
-```json
-{
-  "status": "internal_server_error",
-  "message": "Unexpected Error: depends_on_the_error"
 }
 ```
 
@@ -896,6 +1045,54 @@ This endpoint retrieves information about a specific category.
   "data": {
     "category": {}
   }
+}
+```
+
+---
+
+### **POST** `Categories/create`
+
+#### Description
+This endpoint is used to create a new category. Requires administrator privileges.
+
+#### Parameters
+| Parameter             | Type   | Required | Description                                    |
+|-----------------------|--------|----------|------------------------------------------------|
+| `category_name`       | String | TRUE     | The name of the category                      |
+| `category_description`| String | TRUE     | The description of the category               |
+| `id_father_category`  | String | FALSE    | The ID of the parent category (optional)      |
+
+#### Responses
+
+##### 🆕 `201` - Category successfully registered
+```json
+{
+  "status": "created",
+  "message": "Category Registered Successfully"
+}
+```
+
+##### 🚫 `400` - Invalid or missing parameters
+```json
+{
+  "status": "bad_request",
+  "message": "Category Name and Description must be valid, non-empty and UTF-8 strings"
+}
+```
+
+##### 🔒 `401` - Unauthorized, user is not an admin
+```json
+{
+  "status": "unauthorized",
+  "message": "To register a category, you must be an administrator"
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error"
 }
 ```
 
@@ -1054,110 +1251,6 @@ This endpoint retrieves all locations available in the system. Requires administ
 
 ---
 
-### **POST** `Locations/register`
-
-#### Description
-This endpoint registers a new location for a product instance.
-
-#### Parameters
-| Parameter             | Type    | Required | Description                                    |
-|-----------------------|---------|----------|------------------------------------------------|
-| `id_product_instance` | String  | TRUE     | The UUID of the product instance              |
-| `latitude`            | Number  | TRUE     | The latitude of the location                  |
-| `longitude`           | Number  | TRUE     | The longitude of the location                 |
-
-#### Responses
-
-##### 🆕 `201` - Location successfully registered
-```json
-{
-  "status": "created",
-  "message": "Location Registered Successfully"
-}
-```
-
-##### 🚫 `400` - Invalid or missing parameters
-```json
-{
-  "status": "bad_request",
-  "message": "Invalid Product Instance ID"
-}
-```
-
-##### 🔒 `401` - Unauthorized, user is not allowed to register
-```json
-{
-  "status": "unauthorized",
-  "message": "To register a location, you must be a moderator or higher"
-}
-```
-
-##### 💥 `500` - Unexpected Error on Server-Side
-```json
-{
-  "status": "internal_server_error",
-  "message": "Unexpected Error: depends_on_the_error"
-}
-```
-
----
-
-### **POST** `Locations/set`
-
-#### Description
-This endpoint creates or updates location data for a product instance. If the location exists, it will be updated; otherwise, a new location will be created.
-
-#### Parameters
-| Parameter             | Type    | Required | Description                                    |
-|-----------------------|---------|----------|------------------------------------------------|
-| `id_product_instance` | String  | TRUE     | The UUID of the product instance              |
-| `latitude`            | Number  | TRUE     | The latitude of the location                  |
-| `longitude`           | Number  | TRUE     | The longitude of the location                 |
-
-#### Responses
-
-##### ✅ `200` - Location successfully updated
-```json
-{
-  "status": "success",
-  "message": "Location Updated Successfully"
-}
-```
-
-##### 🆕 `201` - Location successfully created
-```json
-{
-  "status": "created",
-  "message": "Location Registered Successfully"
-}
-```
-
-##### 🚫 `400` - Invalid or missing parameters
-```json
-{
-  "status": "bad_request",
-  "message": "Invalid Product Instance ID"
-}
-```
-
-##### 🔒 `401` - Unauthorized, user is not allowed to create or update
-```json
-{
-  "status": "unauthorized",
-  "message": "To set a location, you must be a moderator or higher"
-}
-```
-
-##### 💥 `500` - Unexpected Error on Server-Side
-```json
-{
-  "status": "internal_server_error",
-  "message": "Unexpected Error: depends_on_the_error"
-}
-```
-
----
-
 ### **GET** `Locations/<id_product_instance>`
 
 #### Description
@@ -1276,6 +1369,110 @@ This endpoint retrieves location data by the ESP32 unique identifier, primarily 
   "data": {
     "location": {}
   }
+}
+```
+
+---
+
+### **POST** `Locations/register`
+
+#### Description
+This endpoint registers a new location for a product instance.
+
+#### Parameters
+| Parameter             | Type    | Required | Description                                    |
+|-----------------------|---------|----------|------------------------------------------------|
+| `id_product_instance` | String  | TRUE     | The UUID of the product instance              |
+| `latitude`            | Number  | TRUE     | The latitude of the location                  |
+| `longitude`           | Number  | TRUE     | The longitude of the location                 |
+
+#### Responses
+
+##### 🆕 `201` - Location successfully registered
+```json
+{
+  "status": "created",
+  "message": "Location Registered Successfully"
+}
+```
+
+##### 🚫 `400` - Invalid or missing parameters
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Product Instance ID"
+}
+```
+
+##### 🔒 `401` - Unauthorized, user is not allowed to register
+```json
+{
+  "status": "unauthorized",
+  "message": "To register a location, you must be a moderator or higher"
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error"
+}
+```
+
+---
+
+### **POST** `Locations/set`
+
+#### Description
+This endpoint creates or updates location data for a product instance. If the location exists, it will be updated; otherwise, a new location will be created.
+
+#### Parameters
+| Parameter             | Type    | Required | Description                                    |
+|-----------------------|---------|----------|------------------------------------------------|
+| `id_product_instance` | String  | TRUE     | The UUID of the product instance              |
+| `latitude`            | Number  | TRUE     | The latitude of the location                  |
+| `longitude`           | Number  | TRUE     | The longitude of the location                 |
+
+#### Responses
+
+##### ✅ `200` - Location successfully updated
+```json
+{
+  "status": "success",
+  "message": "Location Updated Successfully"
+}
+```
+
+##### 🆕 `201` - Location successfully created
+```json
+{
+  "status": "created",
+  "message": "Location Registered Successfully"
+}
+```
+
+##### 🚫 `400` - Invalid or missing parameters
+```json
+{
+  "status": "bad_request",
+  "message": "Invalid Product Instance ID"
+}
+```
+
+##### 🔒 `401` - Unauthorized, user is not allowed to create or update
+```json
+{
+  "status": "unauthorized",
+  "message": "To set a location, you must be a moderator or higher"
+}
+```
+
+##### 💥 `500` - Unexpected Error on Server-Side
+```json
+{
+  "status": "internal_server_error",
+  "message": "Unexpected Error: depends_on_the_error"
 }
 ```
 

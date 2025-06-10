@@ -4,42 +4,40 @@ import L from 'leaflet';
 import { Button, Box, TextField, Container, Alert } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api';
-import pokebolaIcon from '../assets/icons/alarcon.jpeg';
+import pingIcon from '../../assets/icons/solarTrackerPingIcon.png';
 
 const customIcon = L.icon({
-  iconUrl: pokebolaIcon,
-  iconSize: [41, 41],
-  iconAnchor: [20, 41],
+  iconUrl: pingIcon,
+  iconSize: [41, 60.6],
+  iconAnchor: [20, 60.6],
   popupAnchor: [1, -34],
 });
 
 const MapComponent: React.FC = () => {
-  const [position, setPosition] = useState<[number, number]>([-23.5505, -46.6333]);
-  const [lat, setLat] = useState<number>(-23.5505);
-  const [lng, setLng] = useState<number>(-46.6333);
+  const [position, setPosition] = useState<[number, number]>([-22.6651, -45.0086]);
+  const [lat, setLat] = useState<number>(-22.6651);
+  const [lng, setLng] = useState<number>(-45.0086);
   const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { id_product_instance, id_product, esp32_unique_id } = location.state || {};
 
   useEffect(() => {
-    if (!esp32_unique_id) return;
+    if (!id_product_instance) return;
 
     const fetchLocation = async () => {
       try {
-        const response = await api.get(`/Location/get_location?esp32_unique_id=${esp32_unique_id}`);
+        const response = await api.get(`/Locations/${id_product_instance}`);
         const { status, data } = response.data;
-        
-        if (status[0] === 'noLocationData') {
+
+        if (status[0] === 'not_found') {
           setShowAlert(true);
-          setPosition([data.latitude[0], data.longitude[0]]);
-          setLat(data.latitude[0]);
-          setLng(data.longitude[0]);
         } else if (status[0] === 'success') {
           setShowAlert(false);
-          setPosition([data.latitude[0], data.longitude[0]]);
-          setLat(data.latitude[0]);
-          setLng(data.longitude[0]);
+          const location = data.location[0];
+          setPosition([location.latitude, location.longitude]);
+          setLat(location.latitude);
+          setLng(location.longitude);
         }
       } catch (error) {
         console.error('Erro ao buscar localização:', error);
@@ -48,7 +46,7 @@ const MapComponent: React.FC = () => {
     };
 
     fetchLocation();
-  }, [esp32_unique_id]);
+  }, [id_product_instance]);
 
   const handleLatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newLat = parseFloat(e.target.value);
@@ -89,7 +87,7 @@ const MapComponent: React.FC = () => {
     if (position && id_product_instance) {
       const [latitude, longitude] = position;
       try {
-        await api.post('/Location/set', {
+        await api.post('/Locations/set', {
           id_product_instance,
           latitude,
           longitude,
@@ -105,8 +103,10 @@ const MapComponent: React.FC = () => {
   const MapRefresher = () => {
     const map = useMap();
     useEffect(() => {
-      map.invalidateSize();
-    }, [map]);
+      if (position) {
+        map.setView(position, map.getZoom());
+      }
+    }, [position, map]);
     return null;
   };
 

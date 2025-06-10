@@ -50,7 +50,7 @@ const RegisterProduct: React.FC = () => {
       });
 
       if (response.status === 201) {
-        navigate('/products');
+        navigate('/productList');
       } else {
         setError('Erro ao criar o produto.');
       }

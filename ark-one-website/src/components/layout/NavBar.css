@@ -1,0 +1,102 @@
+.header {
+  padding: 0.75rem 2rem; /* Reduced vertical padding from 2rem to 0.75rem */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 9999;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(248, 87, 0, 0.1);
+  height: 80px; /* Set fixed height */
+}
+
+.logo {
+  font-size: 2.5rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #F85700, #FFA901);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  position: relative;
+  z-index: 9999;
+  line-height: 80px; /* Match the header height */
+  margin: 0; /* Remove any margin */
+  padding: 0; /* Remove any padding */
+  display: flex;
+  align-items: center;
+  height: 100%; /* Take full height of header */
+}
+
+nav {
+  position: relative;
+  z-index: 9999;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  position: relative;
+  z-index: 9999;
+}
+
+.btn {
+  padding: 15px 40px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #F85700, #FFA901);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #e04d00, #e69800);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(248, 87, 0, 0.3);
+}
+
+.btn-secondary {
+  background: white;
+  color: #F85700;
+  border: 2px solid #F85700;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(90deg, #F85700, #FFA901);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(248, 87, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.5rem 1rem; /* Reduced vertical padding from 1rem to 0.5rem */
+    flex-direction: row;
+  }
+  
+  .nav-buttons {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+}

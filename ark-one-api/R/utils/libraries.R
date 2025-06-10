@@ -3,7 +3,7 @@ required_packages <- c(
   "plumber", "jose", "digest", "data.table", "DBI", "RPostgres",
   "qcc", "e1071", "forecast", "isotree", "dbscan", "future",
   "parallel", "jsonlite", "ggplot2", "dplyr", "grid", "magrittr",
-  "pool", "bcrypt", "uuid", "testthat", "httr", "callr"
+  "pool", "bcrypt", "uuid", "testthat", "httr", "callr", "httpuv", "later"
 )
 
 # Function to load quietly the packages and install the inexistent ones on the renv

@@ -3,7 +3,7 @@ library(httr)
 if (!require("jsonlite")) install.packages("jsonlite", dependencies = TRUE)
 library(jsonlite)
 
-messages_per_minute <- 2400
+messages_per_minute <- 30
 interval <- 60 / messages_per_minute
 
 esp32_unique_id <- "sampleInformation"
@@ -37,21 +37,25 @@ send_data <- function(esp32_unique_id, max_elevation, min_elevation, servo_tower
     current = current
   )
 
-  start <- proc.time()
+  start <- Sys.time()
 
   response <- suppressWarnings(
     POST(url, body = toJSON(body, auto_unbox = TRUE), encode = "json")
   )
 
-  end <- proc.time()
+  end <- Sys.time()
 
   code <- status_code(response)
   response_text <- content(response, "text", encoding = "UTF-8")
 
-  if (previous_code != code) {
-    elapsed_time <- end - start
-    cat("Code:", code, "| Elapsed:", elapsed_time[["elapsed"]], "| Response:", response_text, "\n")
-  }
+  #if (previous_code != code) {
+  #  elapsed_time_ms <- as.numeric(difftime(end, start, units = "secs")) * 1000
+  #  cat("Code:", code, "| Elapsed:", sprintf("%.3f", elapsed_time_ms), "milliseconds | Response:", response_text, "\n")
+  #}
+
+  elapsed_time_ms <- as.numeric(difftime(end, start, units = "secs")) * 1000
+  cat("| Elapsed:", sprintf("%.3f", elapsed_time_ms), "milliseconds |", "\n")
+
   previous_code <<- code
 }
 

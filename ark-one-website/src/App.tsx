@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './components/pages/Home';
 import Login from './components/pages/Login';
 import Register from './components/pages/Register';
@@ -12,29 +12,20 @@ import SetLocationMap from './components/pages/SetLocationMap';
 import Dashboard from './components/pages/Dashboard';
 import RegisterProduct from './components/pages/RegisterProduct';
 import RegisterCategory from './components/pages/RegisterCategory';
-import planoPadrao from './assets/background/planoPadrao.png';
 import './App.css';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const location = useLocation();
+
   return (
-    <Router>
+    <div className="app-wrapper">
       <NavBar />
-      <div
-        className="container"
-        style={{
-          backgroundImage: `url(${planoPadrao})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          minHeight: '100vh',
-          paddingTop: '94px',
-        }}
-      >
+      <div className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/products" element={<ProductList />} />
+          <Route path="/productList" element={<ProductList />} />
           <Route path="/purchasedProducts" element={<PurchasedProducts />} />
           <Route path="/specificPurchasedProduct" element={<SpecificPurchasedProduct />} />
           <Route path="/registerESP32" element={<RegisterESP32 />} />
@@ -44,6 +35,14 @@ const App: React.FC = () => {
           <Route path="/registerCategory" element={<RegisterCategory />} />
         </Routes>
       </div>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 };
