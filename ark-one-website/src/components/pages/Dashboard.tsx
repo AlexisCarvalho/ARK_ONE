@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
   const [value, setValue] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const { id_product_instance, id_product, esp32_unique_id } = location.state || {};
+  const { id_product_instance, id_product, esp32_unique_id, esp32_unique_ids } = location.state || {};
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
         return (
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
             <CardContent>
-              <InterativeLineChart esp32_unique_ids={[esp32_unique_id]} />
+              <InterativeLineChart esp32_unique_ids={esp32_unique_ids || (esp32_unique_id ? [esp32_unique_id] : [])} />
             </CardContent>
           </Card>
         );

@@ -1,0 +1,92 @@
+.specific-product-container {
+  min-height: 100vh;
+  position: relative;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  overflow: hidden;
+  padding: 2rem;
+  padding-top: calc(2rem + 94px);
+}
+
+.background-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.shape {
+  position: absolute;
+  background: linear-gradient(135deg, #F85700, #FFA901);
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.shape-1 { width: 300px; height: 300px; top: -50px; left: -100px; }
+.shape-2 { width: 200px; height: 200px; top: 70%; right: -50px; }
+.shape-3 { width: 150px; height: 150px; bottom: 10%; left: 10%; }
+.shape-4 { width: 400px; height: 400px; top: 20%; right: -150px; }
+
+.floating-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-icon {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #F85700, #FFA901);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: white;
+  box-shadow: 0 8px 32px rgba(248, 87, 0, 0.2);
+}
+
+.icon-1 { top: 15%; left: 5%; }
+.icon-2 { top: 80%; right: 10%; }
+.icon-3 { top: 50%; left: 85%; }
+
+.content-grid {
+  position: relative;
+  z-index: 2;
+}
+
+.product-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(248, 87, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+.map-container {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #F85700, #FFA901) !important;
+  color: white !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(248, 87, 0, 0.3) !important;
+}

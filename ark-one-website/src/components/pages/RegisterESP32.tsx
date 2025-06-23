@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Container, TextField, Button, Typography, Box } from '@mui/material';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { gsap } from 'gsap';
 import api from '../../api';
+import esp32qrcode from '../../assets/icons/rickroll.png';
+import './RegisterESP32.css';
 
 const RegisterESP32: React.FC = () => {
   const [esp32Id, setEsp32Id] = useState('');
@@ -19,13 +21,12 @@ const RegisterESP32: React.FC = () => {
   }, [id_product]);
 
   useEffect(() => {
+    initAnimations();
+
     if (qrCodeRef.current) {
       const scanner = new Html5QrcodeScanner(
         "qrCodeScanner",
-        {
-          fps: 10,
-          qrbox: 250,
-        },
+        { fps: 10, qrbox: 250 },
         false
       );
 
@@ -36,6 +37,17 @@ const RegisterESP32: React.FC = () => {
       };
     }
   }, []);
+
+  const initAnimations = () => {
+    gsap.from(".brand-section", { duration: 1, x: -100, opacity: 0 });
+    gsap.from(".esp32-form-container", { duration: 1, scale: 0.5, opacity: 0 });
+    gsap.from(".floating-icon", {
+      duration: 1,
+      y: -50,
+      opacity: 0,
+      stagger: 0.2
+    });
+  };
 
   const onScanSuccess = (decodedText: string, decodedResult: any) => {
     setEsp32Id(decodedText);
@@ -70,76 +82,71 @@ const RegisterESP32: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xs">
-      <Box
-        textAlign="center"
-        mt={5}
-        sx={{
-          backgroundColor: 'rgba(255, 255, 255, 0.6)',
-          borderRadius: 2,
-          padding: 4,
-          boxShadow: 10,
-          color: 'black',
-        }}
-      >
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Registrar Dispositivo ESP32
-        </Typography>
+    <div className="register-esp32-container">
+      <div className="floating-elements">
+        <div className="floating-icon icon-1">📱</div>
+        <div className="floating-icon icon-2">🔗</div>
+        <div className="floating-icon icon-3">📡</div>
+      </div>
 
-        <div
-          id="qrCodeScanner"
-          ref={qrCodeRef}
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: '10px',
-            border: '2px solid #007bff',
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-            marginBottom: '20px',
-          }}
-        ></div>
+      <div className="right-section">
+        <div className="brand-section">
+          <div className="logo">Ark One</div>
+          <h1 className="brand-title">Registro de Dispositivo</h1>
+          <p className="brand-subtitle">
+            Conecte seu ESP32 à nossa plataforma
+          </p>
+          <img src={esp32qrcode} alt="ESP32 QR Code" className="esp32-qr-image" />
+          <div className="features-list">
+            <div className="feature-item">
+              <div className="feature-icon">✓</div>
+              <span>Conexão segura</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">✓</div>
+              <span>Monitoramento em tempo real</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">✓</div>
+              <span>Controle total</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <TextField
-          label="ESP32 ID"
-          variant="filled"
-          fullWidth
-          margin="normal"
-          color="primary"
-          value={esp32Id}
-          onChange={(e) => setEsp32Id(e.target.value)}
-          error={!!error}
-          onFocus={() => setError('')}
-          sx={{
-            input: { color: 'black' },
-            bgcolor: 'rgba(255, 255, 255, 0.8)',
-            borderRadius: 1,
-          }}
-        />
+      <div className="left-section">
+        <div className="esp32-form-container">
+          <div className="form-header">
+            <h2 className="form-title">Registrar ESP32</h2>
+            <p className="form-subtitle">Escaneie o QR Code do seu dispositivo</p>
+          </div>
 
-        {error && (
-          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-            {error}
-          </Typography>
-        )}
+          <div className="qr-scanner-container">
+            <div
+              id="qrCodeScanner"
+              ref={qrCodeRef}
+              style={{ width: '100%', height: 'auto' }}
+            ></div>
+          </div>
 
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{
-            mt: 2,
-            backgroundColor: '#007bff',
-            '&:hover': { backgroundColor: '#0056b3' },
-            padding: '12px 16px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            fontSize: '16px',
-          }}
-          onClick={handleRegister}
-        >
-          Registrar
-        </Button>
-      </Box>
-    </Container>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="ESP32 ID"
+            value={esp32Id}
+            onChange={(e) => setEsp32Id(e.target.value)}
+          />
+
+          {error && (
+            <div className="error-message">{error}</div>
+          )}
+
+          <button className="register-btn" onClick={handleRegister}>
+            Registrar Dispositivo
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -20,10 +20,10 @@ const SetLocationMap: React.FC = () => {
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
           Localização do Dispositivo
         </Typography>
-        <MapComponent />
       </Box>
     </Container>
   );
 };
 
+//<MapComponent />
 export default SetLocationMap;
