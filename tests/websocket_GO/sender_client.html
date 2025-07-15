@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 WebSocket Sender</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 1100px; /* aumentado */
+      margin: 48px auto;
+      padding: 3.5rem 2.5rem; /* aumentado */
+      background: white;
+      border-radius: 32px; /* suavizado */
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+      border: 1px solid rgba(248, 87, 0, 0.05);
+      position: relative;
+      z-index: 10;
+    }
+    .background-shapes {
+      position: absolute;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .shape {
+      position: absolute;
+      background: linear-gradient(135deg, #F85700, #FFA901);
+      border-radius: 50%;
+      opacity: 0.07;
+    }
+    .shape-1 { width: 180px; height: 180px; top: 8%; left: -60px; }
+    .shape-2 { width: 120px; height: 120px; top: 70%; right: -40px; }
+    .shape-3 { width: 220px; height: 220px; bottom: -80px; left: 25%; }
+    .shape-4 { width: 140px; height: 140px; top: 30%; right: 10%; }
+    .floating-elements {
+      position: absolute;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .floating-icon {
+      position: absolute;
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #F85700, #FFA901);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      color: white;
+      box-shadow: 0 6px 25px rgba(248, 87, 0, 0.15);
+    }
+    .icon-1 { top: 18%; left: 7%; }
+    .icon-2 { top: 75%; right: 8%; }
+    .icon-3 { top: 45%; left: 92%; }
+    .icon-4 { bottom: 18%; left: 4%; }
+    h2 {
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #F85700, #FFA901);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 2rem;
+      letter-spacing: 0.5px;
+    }
+    .select-box, .input-row {
+      margin-bottom: 1.3em;
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      justify-content: center;
+    }
+    label {
+      font-weight: 500;
+      color: #333;
+      font-size: 1rem;
+    }
+    select, input[type="number"] {
+      padding: 0.5em 1em;
+      border-radius: 20px;
+      border: 1.5px solid #e9ecef;
+      font-size: 1rem;
+      background: #f8f9fa;
+      transition: border-color 0.2s;
+    }
+    select:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: #FFA901;
+    }
+    #sendBtn {
+      padding: 0.7em 2em;
+      background: linear-gradient(135deg, #F85700, #FFA901);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(248, 87, 0, 0.13);
+      margin-left: 1em;
+    }
+    #sendBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(248, 87, 0, 0.18);
+    }
+    .msg-table {
+      margin-top: 2em;
+      margin-bottom: 2em;
+      width: 100%;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(248,87,0,0.03);
+      background: #fff;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+    thead tr {
+      background: linear-gradient(90deg, #F85700 0%, #FFA901 100%);
+    }
+    th, td {
+      border: none;
+      padding: 12px 18px;
+      text-align: left;
+      font-size: 1.08rem;
+      word-break: break-word;
+    }
+    th {
+      color: white;
+      font-weight: 600;
+      font-size: 1.12rem;
+      background: none; /* remove gradiente individual */
+    }
+    tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+    tr:nth-child(odd) td {
+      background: #fff;
+    }
+    @media (max-width: 1200px) {
+      .container {
+        max-width: 98vw;
+        padding: 1.2rem;
+      }
+      th, td {
+        font-size: 1rem;
+      }
+    }
+    @media (max-width: 700px) {
+      .container {
+        padding: 0.5rem;
+      }
+      .select-box, .input-row {
+        flex-direction: column;
+        gap: 0.5em;
+        align-items: stretch;
+      }
+      #sendBtn {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+  <div class="floating-elements">
+    <div class="floating-icon icon-1">📤</div>
+    <div class="floating-icon icon-2">⚡</div>
+    <div class="floating-icon icon-3">🔆</div>
+    <div class="floating-icon icon-4">🔄</div>
+  </div>
+  <div class="container">
+    <h2>Enviar dados do Rastreador Solar via WebSocket</h2>
+    <div class="select-box">
+      <label for="esp32Select">ESP32 Unique ID:</label>
+      <select id="esp32Select">
+        <option value="esp32_001">esp32_001</option>
+        <option value="esp32_003">esp32_003</option>
+        <option value="esp32_999">esp32_999</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label for="countInput">Número de mensagens:</label>
+      <input type="number" id="countInput" min="1" value="1" style="width:80px;">
+      <button id="sendBtn">Enviar Dados</button>
+    </div>
+    <table class="msg-table" id="msgTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Mensagem Enviada</th>
+          <th>Resposta</th>
+        </tr>
+      </thead>
+      <tbody id="msgTableBody">
+        <!-- Rows will be added here -->
+      </tbody>
+    </table>
+  </div>
+  <script>
+    const wsUrl = "ws://localhost:8080/ws";
+    let ws;
+    let msgSeq = 0;
+    let pendingRows = {};
+
+    function connect(onOpenCb) {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        if (onOpenCb) onOpenCb();
+      };
+
+      ws.onmessage = (event) => {
+        // Find the last pending row and update its response
+        let found = false;
+        for (const seq in pendingRows) {
+          if (!pendingRows[seq].responseSet) {
+            pendingRows[seq].responseSet = true;
+            pendingRows[seq].respCell.textContent = event.data;
+            found = true;
+            break;
+          }
+        }
+        // If not found, just ignore (should not happen in normal usage)
+      };
+
+      ws.onerror = () => {
+        // Optionally show error in the table
+      };
+
+      ws.onclose = () => {
+        // Optionally show closed state
+      };
+    }
+
+    document.getElementById('sendBtn').onclick = function() {
+      const count = parseInt(document.getElementById('countInput').value, 10) || 1;
+      const esp32Id = document.getElementById('esp32Select').value;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connect(() => sendMultipleData(count, esp32Id));
+      } else {
+        sendMultipleData(count, esp32Id);
+      }
+    };
+
+    function sendMultipleData(count, esp32Id) {
+      for (let i = 0; i < count; i++) {
+        sendData(esp32Id, i + 1);
+      }
+    }
+
+    function sendData(esp32Id, seqNum) {
+      msgSeq++;
+      // Generate random values in the specified ranges
+      function rand(min, max) {
+        // Arredonda para 4 casas decimais
+        return +(Math.random() * (max - min) + min).toFixed(4);
+      }
+      const msg = {
+        type: "solar_tracker_data",
+        payload: {
+          esp32_unique_id: esp32Id,
+          max_elevation: rand(0, 90),
+          min_elevation: rand(0, 90),
+          servo_tower_angle: rand(0, 360),
+          solar_panel_temperature: rand(-10, 80),
+          esp32_core_temperature: rand(-10, 80),
+          voltage: rand(0, 24),
+          current: rand(0, 10)
+        }
+      };
+      ws.send(JSON.stringify(msg));
+      addMsgRow(msgSeq, msg);
+    }
+
+    function addMsgRow(seq, msgObj) {
+      const tbody = document.getElementById('msgTableBody');
+      // Limit to last 20 rows
+      while (tbody.rows.length > 18) {
+        tbody.deleteRow(0);
+      }
+      const row = tbody.insertRow();
+      const cellSeq = row.insertCell();
+      const cellSent = row.insertCell();
+      const cellResp = row.insertCell();
+      cellSeq.textContent = seq;
+      cellSent.textContent = JSON.stringify(msgObj);
+      cellResp.textContent = "...";
+      pendingRows[seq] = { respCell: cellResp, responseSet: false };
+    }
+
+    // Floating shapes and icons animation (opcional, só visual)
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.gsap) {
+        gsap.set(".floating-icon", { opacity: 0, scale: 0 });
+        gsap.set(".shape", { scale: 0, rotation: 45 });
+        gsap.to(".shape", {
+          scale: 1, rotation: 0, duration: 1.5, ease: "elastic.out(1, 0.5)", stagger: 0.1
+        });
+        gsap.to(".floating-icon", {
+          opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.7)", stagger: 0.15
+        });
+        gsap.to(".floating-icon", {
+          y: -16, duration: 3, repeat: -1, yoyo: true, ease: "power2.inOut", stagger: 0.4
+        });
+        gsap.to(".shape", {
+          x: 10, y: 10, duration: 20, repeat: -1, yoyo: true, ease: "power2.inOut", stagger: 0.05
+        });
+      }
+    });
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</body>
+</html>

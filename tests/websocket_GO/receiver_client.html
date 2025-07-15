@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP32 WebSocket Receiver</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 2.5rem 2rem;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(248, 87, 0, 0.05);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #F85700, #FFA901);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+    }
+
+    #log {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+      color: #444;
+      min-height: 40px;
+      box-shadow: 0 2px 8px rgba(248, 87, 0, 0.04);
+      border: 1px solid #eee;
+      overflow-x: auto;
+    }
+
+    .device-block {
+      margin-bottom: 2.5em;
+      border: 1px solid #FFA901;
+      padding: 1.5em;
+      border-radius: 18px;
+      background: #fafafa;
+      box-shadow: 0 4px 18px rgba(248, 87, 0, 0.07);
+      transition: box-shadow 0.2s;
+      overflow-x: auto;
+    }
+
+    .device-block:hover {
+      box-shadow: 0 8px 32px rgba(248, 87, 0, 0.13);
+    }
+
+    .metadata {
+      font-size: 1.05em;
+      color: #333;
+      margin-bottom: 0.7em;
+      background: #fff7ed;
+      border-radius: 10px;
+      padding: 0.7em 1em;
+      border-left: 4px solid #FFA901;
+      margin-left: -1em;
+      margin-right: -1em;
+      margin-top: -1em;
+      margin-bottom: 1.2em;
+      box-shadow: 0 1px 4px rgba(248, 87, 0, 0.04);
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(248, 87, 0, 0.03);
+      background: white;
+      margin-bottom: 1.2em;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 800px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    thead tr {
+      background: linear-gradient(90deg, #F85700 0%, #FFA901 100%);
+    }
+
+    th,
+    td {
+      border: none;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 1rem;
+      word-break: break-word;
+    }
+
+    th {
+      color: white;
+      font-weight: 600;
+      font-size: 1.05rem;
+      background: none;
+    }
+
+    tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+
+    tr:nth-child(odd) td {
+      background: #fff;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #999;
+      font-size: 1.1rem;
+      padding: 1.5em 0;
+    }
+
+    @media (max-width: 1200px) {
+      .container {
+        max-width: 98vw;
+        padding: 1.2rem;
+      }
+
+      th,
+      td {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        padding: 0.5rem;
+      }
+
+      .device-block {
+        padding: 0.7em;
+      }
+
+      .metadata {
+        padding: 0.5em 0.7em;
+      }
+
+      th,
+      td {
+        padding: 7px 6px;
+      }
+
+      table {
+        min-width: 600px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Monitoramento ESP32</h1>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 1em; margin-bottom: 1.5em;">
+      <label for="esp32Select" style="font-weight:500;">Selecionar dispositivos:</label>
+      <select id="esp32Select" multiple size="3" style="padding:0.5em 1em; border-radius:16px; border:1.5px solid #e9ecef; background:#f8f9fa; font-size:1rem; min-width:180px;">
+        <option value="esp32_001" selected>esp32_001</option>
+        <option value="esp32_003" selected>esp32_003</option>
+        <option value="esp32_999">esp32_999</option>
+        <option value="sampleInformation">sampleInformation</option>
+      </select>
+      <button id="subscribeBtn" style="padding:0.5em 1.5em; background:linear-gradient(135deg,#F85700,#FFA901); color:white; border:none; border-radius:20px; font-weight:600; cursor:pointer;">Inscrever</button>
+    </div>
+    <pre id="log"></pre>
+    <div id="device-data"></div>
+  </div>
+  <script>
+    const log = (msg) => {
+      document.getElementById("log").textContent += msg + "\n";
+    };
+
+    let currentEsp32Ids = ["esp32_001", "esp32_003"];
+    const ws = new WebSocket("ws://localhost:8080/ws");
+
+    function getSelectedEsp32Ids() {
+      const select = document.getElementById('esp32Select');
+      return Array.from(select.selectedOptions).map(opt => opt.value);
+    }
+
+    function subscribeToSelectedDevices() {
+      currentEsp32Ids = getSelectedEsp32Ids();
+      ws.send(JSON.stringify({
+        type: "request_data",
+        payload: {
+          esp32_ids: currentEsp32Ids
+        }
+      }));
+      log("🔔 Inscrito nos dispositivos: " + currentEsp32Ids.join(", "));
+    }
+
+    ws.onopen = () => {
+      log("✅ Conexão aberta");
+      subscribeToSelectedDevices();
+    };
+
+    document.getElementById('subscribeBtn').onclick = function() {
+      subscribeToSelectedDevices();
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "device_data" && Array.isArray(data.data)) {
+        renderDeviceData(data.data);
+      } else {
+        log("📦 Dados recebidos:\n" + JSON.stringify(data, null, 2));
+      }
+    };
+
+    ws.onerror = (err) => {
+      log("❌ Erro: " + err.message);
+    };
+
+    ws.onclose = () => {
+      log("🔌 Conexão encerrada");
+    };
+
+    function renderDeviceData(devices) {
+      const container = document.getElementById("device-data");
+      container.innerHTML = ""; // Clear previous data
+
+      devices.forEach(device => {
+        const block = document.createElement("div");
+        block.className = "device-block";
+
+        // Metadata
+        const meta = device.metadata || {};
+        const metaDiv = document.createElement("div");
+        metaDiv.className = "metadata";
+        metaDiv.innerHTML = `<b>ESP32 ID:</b> ${device.esp32_id}<br>
+          <b>IDProductInstance:</b> ${meta.IDProductInstance || "-"}<br>
+          <b>InsertCount:</b> ${meta.InsertCount ?? "-"}<br>`;
+        block.appendChild(metaDiv);
+
+        // Data Table
+        if (Array.isArray(device.data) && device.data.length > 0) {
+          const tableWrapper = document.createElement("div");
+          tableWrapper.className = "table-responsive";
+          const table = document.createElement("table");
+          const thead = document.createElement("thead");
+          thead.innerHTML = `<tr>
+            <th>#</th>
+            <th>Max Elevation</th>
+            <th>Min Elevation</th>
+            <th>Servo Tower Angle</th>
+            <th>Solar Panel Temp</th>
+            <th>ESP32 Core Temp</th>
+            <th>Voltage</th>
+            <th>Current</th>
+            <th>Created At</th>
+          </tr>`;
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          device.data.forEach((row, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${idx + 1}</td>
+              <td>${row.max_elevation}</td>
+              <td>${row.min_elevation}</td>
+              <td>${row.servo_tower_angle}</td>
+              <td>${row.solar_panel_temp}</td>
+              <td>${row.esp32_core_temp}</td>
+              <td>${row.voltage}</td>
+              <td>${row.current}</td>
+              <td>${row.created_at ?? "-"}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          tableWrapper.appendChild(table);
+          block.appendChild(tableWrapper);
+        } else {
+          const noData = document.createElement("div");
+          noData.className = "no-data";
+          noData.textContent = "Sem dados disponíveis.";
+          block.appendChild(noData);
+        }
+
+        container.appendChild(block);
+      });
+    }
+  </script>
+</body>
+
+</html>

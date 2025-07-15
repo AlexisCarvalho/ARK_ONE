@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.Rproj
+.Rhistory
+.RData
+.Rproj.user
+.lintr

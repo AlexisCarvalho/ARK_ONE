@@ -5,9 +5,10 @@
 # +-----------+
 
 if (requireNamespace("renv", quietly = TRUE)) {
-  if (is.null(renv::project())) {
-    source("renv/activate.R")
+  if (!file.exists("renv/activate.R")) {
+    renv::init()
   }
+  source("renv/activate.R")
 } else {
   stop("The Package 'renv' is not installed. You can install it using install.packages('renv').")
 }
