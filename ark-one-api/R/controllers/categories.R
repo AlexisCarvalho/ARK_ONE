@@ -7,6 +7,15 @@
 source("../services/category_service.R", chdir = TRUE)
 source("../utils/response_handler.R", chdir = TRUE)
 
+# Helper: normalize optional parameters (treat NULL, length 0, empty string or NA as NULL)
+normalize_optional_param <- function(x) {
+  if (is.null(x)) return(NULL)
+  if (length(x) == 0) return(NULL)
+  if (is.character(x) && identical(x, "")) return(NULL)
+  if (length(x) == 1 && is.na(x)) return(NULL)
+  return(x)
+}
+
 #* Create a new category
 #* @param category_name The name of the category
 #* @param category_description The description of the category
@@ -18,7 +27,7 @@ source("../utils/response_handler.R", chdir = TRUE)
 #* @response 401 Unauthorized if user is not an admin
 #* @response 500 Internal Server Error
 function(res, req, category_name, category_description, id_father_category = NA) {
-  id_father_category <- if (is.na(id_father_category)) NULL else id_father_category
+  id_father_category <- normalize_optional_param(id_father_category)
   send_http_response(res, post_category_register(req, category_name, category_description, id_father_category))
 }
 
@@ -56,7 +65,7 @@ function(res, id_category) {
 #* @response 401 Unauthorized if the user is not an admin
 #* @response 500 Internal Server Error
 function(res, req, id_category, category_name, category_description, id_father_category = NA) {
-  id_father_category <- if (is.na(id_father_category)) NULL else id_father_category
+  id_father_category <- normalize_optional_param(id_father_category)
   send_http_response(res, put_categories_with_id(req, id_category, category_name, category_description, id_father_category))
 }
 

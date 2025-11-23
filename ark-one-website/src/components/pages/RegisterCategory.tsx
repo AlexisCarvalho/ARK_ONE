@@ -6,16 +6,17 @@ import api from '../../api';
 const RegisterCategory: React.FC = () => {
   const [categoryName, setCategoryName] = useState('');
   const [categoryDescription, setCategoryDescription] = useState('');
-  const [idFatherCategory, setIdFatherCategory] = useState<number | ''>(''); 
+  const [idFatherCategory, setIdFatherCategory] = useState<string | ''>(''); 
   const [categories, setCategories] = useState<any[]>([]);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/Category/get_all');
+      const response = await api.get('/Categories/get_all');
       if (response.data.status[0] === 'success') {
-        setCategories(response.data.data);
+        // API returns categories under data.categories
+        setCategories(response.data.data.categories || []);
       } else {
         setCategories([]);
       }
@@ -39,10 +40,10 @@ const RegisterCategory: React.FC = () => {
     }
 
     try {
-      const response = await api.post('/Category/create', {
+      const response = await api.post('/Categories/create', {
         category_name: categoryName,
         category_description: categoryDescription,
-        id_father_category: idFatherCategory ? idFatherCategory : 0,
+        id_father_category: idFatherCategory ? idFatherCategory : null,
       });
 
       if (response.status === 201) {
@@ -112,7 +113,7 @@ const RegisterCategory: React.FC = () => {
           <Select
             labelId="father-category-label"
             value={idFatherCategory}
-            onChange={(e) => setIdFatherCategory(e.target.value ? Number(e.target.value) : '')}
+            onChange={(e) => setIdFatherCategory(e.target.value ? String(e.target.value) : '')}
             label="Categoria Pai"
             color="primary"
             sx={{

@@ -7,7 +7,7 @@ const RegisterProduct: React.FC = () => {
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [productPrice, setProductPrice] = useState('');
-  const [idCategory, setIdCategory] = useState<number | ''>('');  
+  const [idCategory, setIdCategory] = useState<string | ''>('');  
   const [locationDependent, setLocationDependent] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [error, setError] = useState('');
@@ -15,9 +15,10 @@ const RegisterProduct: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/Category/get_all');
+      const response = await api.get('/Categories/get_all');
       if (response.data.status[0] === 'success') {
-        setCategories(response.data.data);
+        // API returns categories under data.categories
+        setCategories(response.data.data.categories || []);
       } else {
         setCategories([]);
       }
@@ -135,7 +136,7 @@ const RegisterProduct: React.FC = () => {
             labelId="category-label"
             value={idCategory}
             onChange={(e) => {
-              const selectedCategory = e.target.value ? Number(e.target.value) : '';
+              const selectedCategory = e.target.value ? String(e.target.value) : '';
               setIdCategory(selectedCategory);
             }}
             label="Categoria"

@@ -16,6 +16,16 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id_product_instance, id_product, esp32_unique_id, esp32_unique_ids } = location.state || {};
+  // selected esp32 id to be used by charts; initialize from navigation state
+  const [selectedEsp32, setSelectedEsp32] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (esp32_unique_id) {
+      setSelectedEsp32(esp32_unique_id);
+    } else if (esp32_unique_ids && esp32_unique_ids.length > 0) {
+      setSelectedEsp32(esp32_unique_ids[0]);
+    }
+  }, [esp32_unique_id, esp32_unique_ids]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -28,10 +38,25 @@ const Dashboard: React.FC = () => {
   const renderContent = () => {
     switch (value) {
       case 0:
+        // ensure selectedEsp32 appears first in the list passed to the interactive chart
+        const idsList = (esp32_unique_ids && esp32_unique_ids.length > 0)
+          ? [...esp32_unique_ids]
+          : (esp32_unique_id ? [esp32_unique_id] : []);
+        if (selectedEsp32) {
+          // move selected to front
+          const reordered = [selectedEsp32, ...idsList.filter(id => id !== selectedEsp32)];
+          return (
+            <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
+              <CardContent>
+                <InterativeLineChart esp32_unique_ids={reordered} selectedEsp32={selectedEsp32} />
+              </CardContent>
+            </Card>
+          );
+        }
         return (
           <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
             <CardContent>
-              <InterativeLineChart esp32_unique_ids={esp32_unique_ids || (esp32_unique_id ? [esp32_unique_id] : [])} />
+              <InterativeLineChart esp32_unique_ids={idsList} />
             </CardContent>
           </Card>
         );
@@ -58,7 +83,7 @@ const Dashboard: React.FC = () => {
               <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Estatísticas de Hoje</Typography>
-                  <StatisticsCard esp32_unique_id={esp32_unique_id} />
+                  <StatisticsCard esp32_unique_id={selectedEsp32 || esp32_unique_id} />
                 </CardContent>
               </Card>
             </Grid>
@@ -71,7 +96,7 @@ const Dashboard: React.FC = () => {
               <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Voltagem</Typography>
-                  <RealTimeVoltageChart esp32_unique_id={esp32_unique_id} />
+                  <RealTimeVoltageChart esp32_unique_id={selectedEsp32 || esp32_unique_id} />
                 </CardContent>
               </Card>
             </Grid>
@@ -79,7 +104,7 @@ const Dashboard: React.FC = () => {
               <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Corrente</Typography>
-                  <RealTimeCurrentChart esp32_unique_id={esp32_unique_id} />
+                  <RealTimeCurrentChart esp32_unique_id={selectedEsp32 || esp32_unique_id} />
                 </CardContent>
               </Card>
             </Grid>
@@ -87,7 +112,7 @@ const Dashboard: React.FC = () => {
               <Card sx={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', boxShadow: 10, borderRadius: 5 }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Temperatura</Typography>
-                  <RealTimeTemperatureChart esp32_unique_id={esp32_unique_id} />
+                  <RealTimeTemperatureChart esp32_unique_id={selectedEsp32 || esp32_unique_id} />
                 </CardContent>
               </Card>
             </Grid>

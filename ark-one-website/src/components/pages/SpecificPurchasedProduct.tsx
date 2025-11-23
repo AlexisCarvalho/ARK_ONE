@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Box, Grid, Select, MenuItem, FormControl, InputLabel, Button, TextField } from '@mui/material';
+import { Container, Typography, Box, Grid, Select, MenuItem, FormControl, InputLabel, Button, TextField, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import api from '../../api';
@@ -71,16 +71,42 @@ const SpecificPurchasedProduct: React.FC = () => {
     }
   };
 
-  const handleDeleteESP32 = async () => {
+  // Delete confirmation dialog state
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletingESP32, setDeletingESP32] = useState<string | null>(null);
+
+  // Open confirmation dialog
+  const handleDeleteESP32 = () => {
     if (!selectedProduct) return;
+    setDeletingESP32(selectedProduct.esp32_unique_id);
+    setOpenDeleteDialog(true);
+  };
+
+  // Perform deletion after confirmation
+  const performDeleteESP32 = async () => {
+    if (!deletingESP32) return;
+    setDeleteLoading(true);
     try {
-      await api.delete(`Products/owned/${selectedProduct.esp32_unique_id}`);
-      setProductInstances((prev) =>
-        prev.filter((instance) => instance.esp32_unique_id !== selectedProduct.esp32_unique_id)
-      );
-      setSelectedProduct(productInstances[0] || null);
+      await api.delete(`Products/owned/${deletingESP32}`);
+      // Update local list and auto-select the first remaining device
+      const updatedList = productInstances.filter((instance) => instance.esp32_unique_id !== deletingESP32);
+      setProductInstances(updatedList);
+      const first = updatedList[0] || null;
+      setSelectedProduct(first);
+      if (first) {
+        // fetch its location to update map/message
+        fetchProductLocation(first.id_product_instance);
+      } else {
+        // no devices left, reset location flag
+        setHasLocation(false);
+      }
+      setOpenDeleteDialog(false);
+      setDeletingESP32(null);
     } catch (error) {
       console.error('Erro ao deletar o ESP32:', error);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -117,6 +143,10 @@ const SpecificPurchasedProduct: React.FC = () => {
       });
       // Refresh map by forcing a re-render
       setSelectedProduct({ ...selectedProduct });
+      // Remove the "no location" message after a successful update
+      setHasLocation(true);
+      // Re-fetch location from server to ensure coordinates are in sync
+      fetchProductLocation(selectedProduct.id_product_instance);
     } catch (error) {
       console.error('Erro ao atualizar localização:', error);
     }
@@ -366,6 +396,22 @@ const SpecificPurchasedProduct: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Confirmar Exclusão</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Tem certeza que deseja deletar o ESP32 {deletingESP32}? Esta ação não pode ser desfeita.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ pr: 3, pb: 2 }}>
+          <Button onClick={() => setOpenDeleteDialog(false)} disabled={deleteLoading}>Cancelar</Button>
+          <Button color="error" variant="contained" onClick={performDeleteESP32} disabled={deleteLoading}>
+            {deleteLoading ? 'Deletando...' : 'Deletar ESP32'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

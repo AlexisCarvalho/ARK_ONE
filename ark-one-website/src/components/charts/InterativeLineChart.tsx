@@ -34,10 +34,13 @@ const ALL_VARIABLES = [
 
 interface InterativeLineChartProps {
   esp32_unique_ids: string[];
+  selectedEsp32?: string;
 }
 
-const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique_ids }) => {
-  const [selectedDevice, setSelectedDevice] = useState<string>(esp32_unique_ids[0]);
+const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique_ids, selectedEsp32 }) => {
+  const [selectedDevice, setSelectedDevice] = useState<string>(
+    selectedEsp32 && esp32_unique_ids.includes(selectedEsp32) ? selectedEsp32 : (esp32_unique_ids[0] || '')
+  );
   const [selectedVars, setSelectedVars] = useState<string[]>(['solar_panel_temp']);
   const [dataMap, setDataMap] = useState<Record<string, any>>({});
   const [paused, setPaused] = useState(false);
@@ -115,6 +118,17 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
   }, [paused]); 
 
   const currentData = dataMap[selectedDevice] || [];
+
+  // Keep selectedDevice in sync when props change
+  useEffect(() => {
+    if (selectedEsp32 && esp32_unique_ids.includes(selectedEsp32)) {
+      setSelectedDevice(selectedEsp32);
+    } else if (!selectedEsp32 && esp32_unique_ids.length > 0) {
+      setSelectedDevice(esp32_unique_ids[0]);
+    } else if (esp32_unique_ids.length === 0) {
+      setSelectedDevice('');
+    }
+  }, [esp32_unique_ids, selectedEsp32]);
 
   return (
     <Container>

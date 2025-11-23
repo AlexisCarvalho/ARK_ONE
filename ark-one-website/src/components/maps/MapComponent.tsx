@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Button, Box, TextField, Container, Alert } from '@mui/material';
+import { Button, Box, TextField, Container } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import pingIcon from '../../assets/icons/solarTrackerPingIcon.png';
@@ -37,7 +37,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   );
   const [lat, setLat] = useState<number>(-22.6651);
   const [lng, setLng] = useState<number>(-45.0086);
-  const [showAlert, setShowAlert] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { id_product_instance, id_product, esp32_unique_id } = location.state || {};
@@ -51,9 +50,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const { status, data } = response.data;
 
         if (status[0] === 'not_found') {
-          setShowAlert(true);
+          // no location found; keep default position and coords
+          setPosition([-22.6651, -45.0086]);
+          setLat(-22.6651);
+          setLng(-45.0086);
         } else if (status[0] === 'success') {
-          setShowAlert(false);
           const location = data.location[0];
           setPosition([location.latitude, location.longitude]);
           setLat(location.latitude);
@@ -61,7 +62,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
       } catch (error) {
         console.error('Erro ao buscar localização:', error);
-        setShowAlert(true);
+        // keep defaults; parent component handles alert display
       }
     };
 
@@ -122,7 +123,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         navigate('/specificPurchasedProduct', { state: { id_product_instance, id_product } });
       } catch (error) {
         console.error('Erro ao exportar localização:', error);
-        setShowAlert(true);
+        // setShowAlert(true);
       }
     }
   };
@@ -139,11 +140,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const mapContent = (
     <>
-      {showAlert && (
-        <Alert severity="warning" sx={{ mb: 2, color: 'red' }}>
-          Ainda não há nenhuma localização definida. Por favor insira no mapa
-        </Alert>
-      )}
+      {/* parent component displays any "no location" messages */}
 
       <MapContainer
         className="map-container"

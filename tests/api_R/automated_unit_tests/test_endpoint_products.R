@@ -156,4 +156,31 @@ test_product_owned_register <- function(base_url, moderator_token) {
     expect_equal(content$status, "created")
     expect_equal(content$message, "Product Owned Registered Successfully")
   })
+
+  test_that("Successful product registration returns 201", {
+    response <- product_owned_register_request(base_url, moderator_token, id_product, "esp32_001")
+    content <- content(response, as = "parsed", simplifyVector = TRUE)
+
+    expect_equal(status_code(response), 201)
+    expect_equal(content$status, "created")
+    expect_equal(content$message, "Product Owned Registered Successfully")
+  })
+
+  test_that("Successful product registration returns 201", {
+    response <- product_owned_register_request(base_url, moderator_token, id_product, "esp32_003")
+    content <- content(response, as = "parsed", simplifyVector = TRUE)
+
+    expect_equal(status_code(response), 201)
+    expect_equal(content$status, "created")
+    expect_equal(content$message, "Product Owned Registered Successfully")
+  })
+
+  test_that("Successful product registration returns 201", {
+    response <- product_owned_register_request(base_url, moderator_token, id_product, "esp32_999")
+    content <- content(response, as = "parsed", simplifyVector = TRUE)
+
+    expect_equal(status_code(response), 201)
+    expect_equal(content$status, "created")
+    expect_equal(content$message, "Product Owned Registered Successfully")
+  })
 }
