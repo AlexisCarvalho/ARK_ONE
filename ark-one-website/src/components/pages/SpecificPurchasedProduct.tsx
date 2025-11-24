@@ -24,11 +24,14 @@ const SpecificPurchasedProduct: React.FC = () => {
   const [lat, setLat] = useState<number>(-22.6651);
   const [lng, setLng] = useState<number>(-45.0086);
   const [hasLocation, setHasLocation] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isModerator, setIsModerator] = useState<boolean>(false);
   const location = useLocation();
   const id_product = (location.state as LocationState)?.id_product;
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchUserType();
     const fetchProductInstances = async () => {
       try {
         const response = await api.get(`Products/owned/${id_product}`);
@@ -41,6 +44,7 @@ const SpecificPurchasedProduct: React.FC = () => {
           setProductInstances(products);
           // Auto select first product
           setSelectedProduct(products[0]);
+          fetchProductLocation(products[0].id_product_instance);
         }
       } catch (error) {
         console.error(error);
@@ -165,29 +169,24 @@ const SpecificPurchasedProduct: React.FC = () => {
     setLng(longitude);
   };
 
-  // Update initial product selection to also fetch location
-  useEffect(() => {
-    const fetchProductInstances = async () => {
-      try {
-        const response = await api.get(`Products/owned/${id_product}`);
-        const products = response.data.data.products_owned;
-
-        if (products.length === 0) {
-          setError('Nenhum produto deste tipo cadastrado.');
-        } else {
-          setError(null);
-          setProductInstances(products);
-          // Auto select first product
-          setSelectedProduct(products[0]);
-          fetchProductLocation(products[0].id_product_instance);
-        }
-      } catch (error) {
-        console.error(error);
-        setError('Nenhum produto deste tipo cadastrado.');
+  const fetchUserType = async () => {
+    try {
+      const response = await api.get('/Users/role');
+      if (
+        response.data.status[0] === 'success' &&
+        response.data.data[0].user_role === 'admin'
+      ) {
+        setIsAdmin(true);
+      } else if (
+        response.data.status[0] === 'success' &&
+        response.data.data[0].user_role === 'moderator'
+      ) {
+        setIsModerator(true);
       }
-    };
-    fetchProductInstances();
-  }, [id_product]);
+    } catch (error) {
+      console.error('Erro ao verificar tipo de usuário:', error);
+    }
+  };
 
   useEffect(() => {
     initAnimations();
@@ -348,8 +347,10 @@ const SpecificPurchasedProduct: React.FC = () => {
                             sx={{
                               backgroundColor: '#007bff',
                               '&:hover': { backgroundColor: '#0056b3' },
+                              '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' }
                             }}
                             onClick={handleUpdateLocation}
+                            disabled={!(isAdmin || isModerator)}
                           >
                             Atualizar Localização
                           </Button>
@@ -360,6 +361,8 @@ const SpecificPurchasedProduct: React.FC = () => {
                         fullWidth
                         color="error"
                         onClick={handleDeleteESP32}
+                        disabled={!(isAdmin || isModerator)}
+                        sx={{ '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' } }}
                       >
                         Deletar ESP32
                       </Button>

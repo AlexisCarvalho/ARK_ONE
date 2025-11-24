@@ -1,0 +1,451 @@
+/* ...existing code... */
+
+.register-container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    position: relative;
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+/* Animated gradient overlay */
+.register-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 50%, rgba(248, 87, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 169, 1, 0.1) 0%, transparent 50%);
+    animation: gradientShift 10s ease infinite;
+    z-index: 1;
+}
+
+@keyframes gradientShift {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Floating particles (scoped) */
+.register-container .background-shapes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 2;
+}
+
+.register-container .shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.15;
+    animation: float 20s ease-in-out infinite;
+}
+
+.register-container .shape-1 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    top: -100px;
+    left: -100px;
+    animation-delay: 0s;
+}
+
+.register-container .shape-2 {
+    width: 350px;
+    height: 350px;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    bottom: -100px;
+    right: -100px;
+    animation-delay: 5s;
+}
+
+.register-container .shape-3 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #F85700, #FFA901);
+    top: 50%;
+    right: 10%;
+    animation-delay: 10s;
+}
+
+.register-container .shape-4 {
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    bottom: 20%;
+    left: 15%;
+    animation-delay: 15s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(30px, -30px) rotate(120deg); }
+    66% { transform: translate(-30px, 30px) rotate(240deg); }
+}
+
+/* Floating icons (scoped) */
+.register-container .floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.register-container .floating-icon {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 10px 40px rgba(248, 87, 0, 0.3);
+    animation: iconFloat 6s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.register-container .icon-1 { 
+    top: 15%; 
+    right: 5%;
+    animation-delay: 0s;
+}
+
+.register-container .icon-2 { 
+    top: 80%; 
+    left: 10%;
+    animation-delay: 2s;
+}
+
+.register-container .icon-3 { 
+    top: 50%; 
+    right: 85%;
+    animation-delay: 4s;
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+/* Layout blocks (scoped) */
+.register-container .left-section,
+.register-container .right-section {
+    flex: 0.8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    z-index: 10;
+    position: relative;
+    max-width: 600px;
+}
+
+.register-container .left-section {
+    order: 2;
+}
+
+.register-container .right-section {
+    order: 1;
+}
+
+/* Brand Section - Enhanced (scoped) */
+.register-container .brand-section {
+    color: white;
+    max-width: 500px;
+}
+
+.register-container .logo {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+    display: inline-block;
+}
+
+.register-container .brand-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.register-container .brand-subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.register-container .features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.register-container .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.register-container .feature-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(10px);
+    border-color: rgba(248, 87, 0, 0.3);
+}
+
+.register-container .feature-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.register-container .feature-item span {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+}
+
+/* Form Container - Glassmorphism (scoped) */
+.register-container .register-form-container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 440px;
+    border: 1px solid rgba(248, 87, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.register-container .register-form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FFA901, #F85700);
+}
+
+.register-container .form-header {
+    margin-bottom: 2rem;
+}
+
+.register-container .form-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.5rem;
+}
+
+.register-container .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.register-container .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.register-container .form-input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    color: #333;
+}
+
+.register-container .form-input:focus {
+    outline: none;
+    border-color: #F85700;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(248, 87, 0, 0.1);
+}
+
+.register-container .form-input::placeholder {
+    color: #999;
+}
+
+.register-container .error-message {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    font-size: 0.95rem;
+}
+
+.register-container .register-btn {
+    width: 100%;
+    padding: 1.2rem;
+    background: linear-gradient(135deg, #FFA901, #F85700);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(248, 87, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.register-container .register-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.register-container .register-btn:hover::before {
+    left: 100%;
+}
+
+.register-container .register-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.register-container .register-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(248, 87, 0, 0.5);
+}
+
+.register-container .register-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.register-container .loading {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.register-container .login-link {
+    text-align: center;
+    color: #666;
+    margin-top: 1.5rem;
+}
+
+.register-container .login-link a {
+    color: #F85700;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.register-container .login-link a:hover {
+    color: #FFA901;
+    text-decoration: underline;
+}
+
+/* Responsive Design (scoped) */
+@media (max-width: 1024px) {
+    .register-container {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .register-container .right-section {
+        display: none;
+    }
+    
+    .register-container .left-section {
+        order: 1;
+        padding: 1rem;
+        max-width: 100%;
+    }
+    
+    .register-container .register-form-container {
+        padding: 2rem;
+        margin: 1rem;
+        width: 90%;
+    }
+    
+    .register-container .floating-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .register-container .register-form-container {
+        padding: 1.5rem;
+    }
+    
+    .register-container .form-title {
+        font-size: 1.5rem;
+    }
+    
+    .register-container .shape {
+        filter: blur(40px);
+    }
+}
+
+/* ...existing code... */

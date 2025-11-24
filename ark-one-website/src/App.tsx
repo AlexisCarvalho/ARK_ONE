@@ -12,6 +12,7 @@ import SetLocationMap from './components/pages/SetLocationMap';
 import Dashboard from './components/pages/Dashboard';
 import RegisterProduct from './components/pages/RegisterProduct';
 import RegisterCategory from './components/pages/RegisterCategory';
+import RegisterAnalyst from './components/pages/RegisterAnalyst';
 import './App.css';
 
 const AppContent: React.FC = () => {
@@ -33,6 +34,7 @@ const AppContent: React.FC = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/registerProduct" element={<RegisterProduct />} />
           <Route path="/registerCategory" element={<RegisterCategory />} />
+          <Route path="/registerAnalyst" element={<RegisterAnalyst />} />
         </Routes>
       </div>
     </div>

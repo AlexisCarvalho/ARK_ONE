@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import gsap from 'gsap';
 import './ProductList.css';  // Add this import
+import { setUserName } from '../../auth';
 
 interface Product {
   id_product: string;
@@ -15,6 +16,7 @@ interface Product {
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isModerator, setIsModerator] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +28,17 @@ const ProductList: React.FC = () => {
       fetchData();
       setupMouseMove();
     }
+
+    // fetch username for NavBar display
+    (async () => {
+      try {
+        const resp = await api.get('/Users/username');
+        const uname = resp?.data?.data?.username?.[0] || null;
+        setUserName(uname);
+      } catch (e) {
+        // ignore
+      }
+    })();
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -149,7 +162,12 @@ const ProductList: React.FC = () => {
         response.data.data[0].user_role === 'admin'
       ) {
         setIsAdmin(true);
-      }
+      } else if (
+        response.data.status[0] === 'success' &&
+        response.data.data[0].user_role === 'moderator'
+      ) {
+        setIsModerator(true);
+      } 
     } catch (error) {
       console.error('Erro ao verificar tipo de usuário:', error);
     }
@@ -209,9 +227,10 @@ const ProductList: React.FC = () => {
               {product.product_price.toFixed(2)}
             </div>
             <div className="product-actions">
-              <button 
-                className="add-to-cart-btn"
-                onClick={() => handleRegisterNewESP32(product.id_product)}
+              <button
+                className={`add-to-cart-btn ${(!isAdmin && !isModerator) ? 'disabled-btn' : ''}`}
+                onClick={() => { if (isAdmin || isModerator) handleRegisterNewESP32(product.id_product); }}
+                disabled={!(isAdmin || isModerator)}
               >
                 Cadastrar Novo
               </button>

@@ -39,6 +39,28 @@ get_id_user_from_req <- function(req) {
   )
 }
 
+get_id_user_from_token <- function(token) {
+  tryCatch(
+    {
+      decoded_token <- decode_jwt_token(token)
+
+      decoded_token$sub
+    },
+    error = function(e) stop(e)
+  )
+}
+
+get_username_from_token <- function(token) {
+  tryCatch(
+    {
+      decoded_token <- decode_jwt_token(token)
+
+      decoded_token$username
+    },
+    error = function(e) stop(e)
+  )
+}
+
 # Get the user role from his token using the request
 get_user_role_from_req <- function(req) {
   tryCatch(

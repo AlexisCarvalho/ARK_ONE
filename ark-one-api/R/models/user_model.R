@@ -109,3 +109,21 @@ insert_user_affiliation <- function(id_analyst, id_owner) {
     error = function(e) stop(e)
   )
 }
+
+fetch_owner_for_analyst <- function(id_analyst) {
+  con <- get_conn()
+
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    stop("Database Connection Failed")
+  }
+
+  on.exit(pool_return(con), add = TRUE)
+
+  tryCatch(
+    {
+      query <- "SELECT id_owner FROM user_affiliations WHERE id_analyst = $1 LIMIT 1"
+      return(dbGetQuery(con, query, params = list(id_analyst)))
+    },
+    error = function(e) stop(e)
+  )
+}

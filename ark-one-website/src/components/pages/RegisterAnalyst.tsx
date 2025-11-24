@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import api from '../../api';
-import './Register.css';
+import './RegisterAnalyst.css';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const userRole = 'analyst';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -46,17 +47,30 @@ const Register: React.FC = () => {
     }
 
     try {
-      await api.post('Account/register', { name, email, password });
+      // register specifically as an analyst from this page
+      await api.post('Account/register', { name, email, password, user_role: userRole });
+      // login to obtain the analyst token
+      const loginResp = await api.post('Account/login', { email, password });
+      const analystToken = loginResp?.data?.data?.token;
+      if (!analystToken) {
+        throw new Error('Falha ao obter token do analista');
+      }
+
+      // affiliate the newly created analyst to current owner (caller) using the analyst token
+      const affiliateResp = await api.post('/Users/affiliate', { token_analyst: analystToken });
+
+      // animate and navigate on success
       gsap.to(".register-form-container", {
         scale: 0.95,
         duration: 0.3,
         ease: "power2.out",
         onComplete: () => {
-          navigate('/login');
+          navigate('/productList');
         }
       });
     } catch (error) {
-      setError('Falha no registro. O email pode já estar em uso.');
+      console.error('Erro no registro/afiliação:', error);
+      setError('Falha no registro ou afiliação. Verifique os dados e tente novamente.');
       gsap.to(".register-form-container", {
         x: -10,
         duration: 0.1,
@@ -87,26 +101,26 @@ const Register: React.FC = () => {
       <div className="right-section">
         <div className="brand-section">
           <div className="logo">Ark One</div>
-          <h1 className="brand-title">Junte-se a Nós</h1>
+          <h1 className="brand-title">Cadastrar Analista</h1>
           <p className="brand-subtitle">
-            Comece sua jornada de inovação em energia solar hoje
+            Cadastre um analista que poderá visualizar os dados deste moderador em modo leitura.
           </p>
           <div className="features-list">
             <div className="feature-item">
               <div className="feature-icon">✓</div>
-              <span>Cadastro rápido e seguro</span>
+              <span>Acesso restrito de visualização</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon">✓</div>
-              <span>Acesso a produtos exclusivos</span>
+              <span>Visualização dos dados do moderador</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon">✓</div>
-              <span>Suporte personalizado</span>
+              <span>Gerenciamento simplificado</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon">✓</div>
-              <span>Atualizações em tempo real</span>
+              <span>Notificações e relatórios</span>
             </div>
           </div>
         </div>
@@ -115,8 +129,10 @@ const Register: React.FC = () => {
       <div className="left-section">
         <div className="register-form-container">
           <div className="form-header">
-            <h2 className="form-title">Criar Conta</h2>
-            <p className="form-subtitle">Preencha seus dados para começar</p>
+            <h2 className="form-title">Cadastrar Analista</h2>
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f6f7fb', borderRadius: 8, color: '#333' }}>
+              Observação: o analista criado terá permissão apenas para visualizar seu dados, não alterá-los.
+            </div>
           </div>
 
           <form onSubmit={handleRegister}>
@@ -153,12 +169,7 @@ const Register: React.FC = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Tipo de Conta</label>
-              <div className="form-input" style={{ padding: '10px 12px', background: '#f6f7fb', borderRadius: 8 }}>
-                As contas são criadas como <strong>moderador</strong> por padrão. Analistas podem ser cadastrados após entrar.
-              </div>
-            </div>
+            {/* This page always creates an 'analyst' account, so no account type selection is shown */}
 
             {error && (
               <div className="error-message">{error}</div>
@@ -169,13 +180,6 @@ const Register: React.FC = () => {
               {loading && <div className="loading"></div>}
             </button>
 
-            <div className="divider">
-              <span>ou</span>
-            </div>
-
-            <div className="login-link">
-              Já tem uma conta? <Link to="/login">Entre aqui</Link>
-            </div>
           </form>
         </div>
       </div>

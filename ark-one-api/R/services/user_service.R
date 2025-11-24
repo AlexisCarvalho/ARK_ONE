@@ -50,6 +50,36 @@ check_password <- function(input_password, stored_hashed_password) {
   checkpw(input_password, stored_hashed_password)
 }
 
+get_username <- function(req) {
+  tryCatch(
+    {
+      token <- get_token_from_req(req)
+      username <- get_username_from_token(token)
+
+      if (!is.character(username) || length(username) == 0 || nchar(username) == 0) {
+        return(list(
+          status = "not_found",
+          message = "Username not found in token",
+          data = list(username = NULL)
+        ))
+      }
+
+      list(
+        status = "success",
+        message = "Username successfully retrieved",
+        data = list(username = username)
+      )
+    },
+    error = function(e) {
+      list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", e$message),
+        data = list(username = NULL)
+      )
+    }
+  )
+}
+
 # +-----------------------+
 # |        ACCOUNT        |
 # +-----------------------+
