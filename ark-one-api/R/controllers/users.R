@@ -16,6 +16,18 @@ function(res, req) {
   send_http_response(res, get_users_all(req))
 }
 
+#* Affiliate an analyst to an owner
+#* @param id_analyst The ID of the analyst to affiliate
+#* @tag Users
+#* @post /affiliate
+#* @response 201 Created if affiliation created
+#* @response 400 Bad Request if parameters are invalid
+#* @response 401 Unauthorized if caller lacks permissions
+#* @response 500 Internal Server Error
+function(res, req, id_analyst) {
+  send_http_response(res, post_affiliate_analyst(req, id_analyst))
+}
+
 #* Get the role of the user
 #* @tag Users
 #* @get /role

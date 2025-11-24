@@ -8,6 +8,7 @@ const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userRole, setUserRole] = useState('moderator');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -45,8 +46,14 @@ const Register: React.FC = () => {
       return;
     }
 
+    if (!['moderator','analyst'].includes(userRole)) {
+      setError('Role inválido');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await api.post('Account/register', { name, email, password });
+      await api.post('Account/register', { name, email, password, user_role: userRole });
       gsap.to(".register-form-container", {
         scale: 0.95,
         duration: 0.3,
@@ -151,6 +158,18 @@ const Register: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tipo de Conta</label>
+              <select
+                className="form-input"
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value)}
+              >
+                <option value="moderator">Moderator</option>
+                <option value="analyst">Analyst</option>
+              </select>
             </div>
 
             {error && (

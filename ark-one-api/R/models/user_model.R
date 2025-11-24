@@ -91,3 +91,21 @@ insert_user <- function(name, email, hashed_password, user_role) {
     error = function(e) stop(e)
   )
 }
+
+insert_user_affiliation <- function(id_analyst, id_owner) {
+  con <- get_conn()
+
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    stop("Database Connection Failed")
+  }
+
+  on.exit(pool_return(con), add = TRUE)
+
+  tryCatch(
+    {
+      query_insert <- "INSERT INTO user_affiliations (id_analyst, id_owner) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+      return(dbExecute(con, query_insert, params = list(id_analyst, id_owner)))
+    },
+    error = function(e) stop(e)
+  )
+}

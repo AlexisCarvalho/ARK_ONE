@@ -334,3 +334,62 @@ get_users_with_id <- function(req, id_user) {
     data = list(user = user)
   )
 }
+
+# +-----------------------+
+# |     AFFILIATIONS      |
+# +-----------------------+
+
+# Endpoint logic to allow admins or moderators to affiliate an analyst to a user (owner)
+post_affiliate_analyst <- function(req, id_analyst) {
+  # Validate input
+  if (is_invalid_utf8(id_analyst) || !UUIDvalidate(id_analyst)) {
+    return(list(status = 'bad_request', message = 'Invalid analyst ID provided', data = list(affiliated = FALSE)))
+  }
+
+  # Get caller role and id (caller becomes the owner)
+  caller_role <- tryCatch(get_user_role_from_req(req), error = function(e) NULL)
+  caller_id <- tryCatch(get_id_user_from_req(req), error = function(e) NULL)
+
+  if (is.null(caller_role) || is.null(caller_id)) {
+    return(list(status = 'unauthorized', message = 'Invalid or missing token', data = list(affiliated = FALSE)))
+  }
+
+  # Only admins or moderators (owners) may register/affiliate an analyst to themselves
+  if (!(caller_role %in% c('admin', 'moderator'))) {
+    return(list(status = 'unauthorized', message = 'Only admins or moderators can affiliate analysts', data = list(affiliated = FALSE)))
+  }
+
+  id_owner <- caller_id
+
+  # Check target user role: id_analyst must be a user with role 'analyst'
+  analyst_row <- tryCatch(fetch_user_role_by_id(id_analyst), error = function(e) e)
+  owner_row <- tryCatch(fetch_user_role_by_id(id_owner), error = function(e) e)
+
+  if (inherits(analyst_row, 'error') || inherits(owner_row, 'error')) {
+    return(list(status = 'internal_server_error', message = 'Database error while fetching users', data = list(affiliated = FALSE)))
+  }
+
+  if (!is.data.frame(analyst_row) || nrow(analyst_row) == 0 || analyst_row$user_role[1] != 'analyst') {
+    return(list(status = 'bad_request', message = 'Provided analyst id is not an analyst', data = list(affiliated = FALSE)))
+  }
+
+  if (!is.data.frame(owner_row) || nrow(owner_row) == 0) {
+    return(list(status = 'bad_request', message = 'Owner not found', data = list(affiliated = FALSE)))
+  }
+
+  # Prevent affiliating an analyst to themselves (shouldn't happen but check)
+  if (id_analyst == id_owner) {
+    return(list(status = 'bad_request', message = 'Analyst cannot be affiliated to themselves', data = list(affiliated = FALSE)))
+  }
+
+  # Perform insertion
+  inserted <- tryCatch({
+    insert_user_affiliation(id_analyst, id_owner)
+  }, error = function(e) e)
+
+  if (inherits(inserted, 'error')) {
+    return(list(status = 'internal_server_error', message = 'Database error while inserting affiliation', data = list(affiliated = FALSE)))
+  }
+
+  list(status = 'created', message = 'Affiliation created', data = list(affiliated = TRUE))
+}
