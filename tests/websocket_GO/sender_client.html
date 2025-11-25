@@ -200,6 +200,7 @@
       <label for="countInput">Número de mensagens:</label>
       <input type="number" id="countInput" min="1" value="1" style="width:80px;">
       <button id="sendBtn">Enviar Dados</button>
+      <button id="sendZeroBtn" style="padding:0.7em 2em; margin-left:0.5em; background:#6c757d; color:white; border:none; border-radius:25px; font-weight:600; cursor:pointer;">Enviar Zeros</button>
     </div>
     <table class="msg-table" id="msgTable">
       <thead>
@@ -260,9 +261,27 @@
       }
     };
 
+    // New button: send zeros instead of random values
+    document.getElementById('sendZeroBtn').onclick = function() {
+      const count = parseInt(document.getElementById('countInput').value, 10) || 1;
+      const esp32Id = document.getElementById('esp32Select').value;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        connect(() => sendMultipleZeros(count, esp32Id));
+      } else {
+        sendMultipleZeros(count, esp32Id);
+      }
+    };
+
     function sendMultipleData(count, esp32Id) {
       for (let i = 0; i < count; i++) {
         sendData(esp32Id, i + 1);
+      }
+    }
+
+    // Send multiple zero-valued messages (isolated behavior)
+    function sendMultipleZeros(count, esp32Id) {
+      for (let i = 0; i < count; i++) {
+        sendZeroData(esp32Id, i + 1);
       }
     }
 
@@ -290,13 +309,35 @@
       addMsgRow(msgSeq, msg);
     }
 
+    // send a single message with all numeric fields set to zero
+    function sendZeroData(esp32Id, seqNum) {
+      msgSeq++;
+      const msg = {
+        type: "solar_tracker_data",
+        payload: {
+          esp32_unique_id: esp32Id,
+          max_elevation: 0,
+          min_elevation: 0,
+          servo_tower_angle: 0,
+          solar_panel_temperature: 0,
+          esp32_core_temperature: 0,
+          voltage: 0,
+          current: 0
+        }
+      };
+      ws.send(JSON.stringify(msg));
+      addMsgRow(msgSeq, msg);
+    }
+
     function addMsgRow(seq, msgObj) {
       const tbody = document.getElementById('msgTableBody');
-      // Limit to last 20 rows
-      while (tbody.rows.length > 18) {
-        tbody.deleteRow(0);
+      // Limit to last 20 rows (keep newest at top)
+      // if we already have 18 rows, remove the oldest (last row) before inserting
+      if (tbody.rows.length >= 18) {
+        tbody.deleteRow(tbody.rows.length - 1);
       }
-      const row = tbody.insertRow();
+      // insert new row at top
+      const row = tbody.insertRow(0);
       const cellSeq = row.insertCell();
       const cellSent = row.insertCell();
       const cellResp = row.insertCell();

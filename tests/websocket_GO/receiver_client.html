@@ -247,8 +247,10 @@
         const meta = device.metadata || {};
         const metaDiv = document.createElement("div");
         metaDiv.className = "metadata";
+        const hasRegistration = meta.IDProductInstance && meta.IDProductInstance !== "";
+        const statusEmoji = hasRegistration ? '✅' : '❌';
         metaDiv.innerHTML = `<b>ESP32 ID:</b> ${device.esp32_id}<br>
-          <b>IDProductInstance:</b> ${meta.IDProductInstance || "-"}<br>
+          <b>Cadastro do Dispositivo Encontrado:</b> ${hasRegistration ? ' ' + statusEmoji : ' ' + statusEmoji}<br>
           <b>InsertCount:</b> ${meta.InsertCount ?? "-"}<br>`;
         block.appendChild(metaDiv);
 

@@ -46,6 +46,8 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
   const [paused, setPaused] = useState(false);
   const [isAreaChart, setIsAreaChart] = useState(false);
   const ws = useRef<WebSocket | null>(null);
+  const chartWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:8080/ws');
@@ -119,6 +121,8 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
 
   const currentData = dataMap[selectedDevice] || [];
 
+  const hasData = Array.isArray(currentData) && currentData.length > 0;
+
   // Keep selectedDevice in sync when props change
   useEffect(() => {
     if (selectedEsp32 && esp32_unique_ids.includes(selectedEsp32)) {
@@ -130,6 +134,19 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
     }
   }, [esp32_unique_ids, selectedEsp32]);
 
+  useEffect(() => {
+    const el = chartWrapperRef.current;
+    if (!el) return;
+    const check = () => {
+      const ok = el.clientWidth > 0 && el.clientHeight > 0;
+      setChartReady(ok);
+    };
+    check();
+    const ro = new ResizeObserver(() => check());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [/* no deps - wrapper element */]);
+
   return (
     <Container>
       <Typography variant="h5" gutterBottom>
@@ -137,54 +154,44 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
       </Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 150 }}>
-          <InputLabel>Dispositivo</InputLabel>
-          <Select
-            value={selectedDevice}
-            label="Dispositivo"
-            onChange={(e) => setSelectedDevice(e.target.value)}
-          >
-            {esp32_unique_ids.map(dev => (
-              <MenuItem key={dev} value={dev}>{dev}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
         <FormControl sx={{ minWidth: 250 }}>
-          <InputLabel>Variáveis</InputLabel>
-          <Select
-            multiple
-            value={selectedVars}
-            onChange={(e) => setSelectedVars(e.target.value as string[])}
-            input={<OutlinedInput label="Variáveis" />}
-            renderValue={(selected) => selected.join(', ')}
-          >
-            {ALL_VARIABLES.map(v => (
-              <MenuItem key={v.key} value={v.key}>
-                <Checkbox checked={selectedVars.includes(v.key)} />
-                <ListItemText primary={v.label} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+           <InputLabel>Variáveis</InputLabel>
+           <Select
+             multiple
+             value={selectedVars}
+             onChange={(e) => setSelectedVars(e.target.value as string[])}
+             input={<OutlinedInput label="Variáveis" />}
+             renderValue={(selected) => selected.join(', ')}
+           >
+             {ALL_VARIABLES.map(v => (
+               <MenuItem key={v.key} value={v.key}>
+                 <Checkbox checked={selectedVars.includes(v.key)} />
+                 <ListItemText primary={v.label} />
+               </MenuItem>
+             ))}
+           </Select>
+         </FormControl>
 
-        <Button
-          variant="contained"
-          color={paused ? 'success' : 'warning'}
-          onClick={() => setPaused(p => !p)}
-        >
-          {paused ? 'Retomar' : 'Pausar'}
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={() => setIsAreaChart(prev => !prev)}
-        >
-          {isAreaChart ? 'Mostrar Linhas' : 'Mostrar Área'}
-        </Button>
-      </Stack>
+         <Button
+           variant="contained"
+           color={paused ? 'success' : 'warning'}
+           onClick={() => setPaused(p => !p)}
+         >
+           {paused ? 'Retomar' : 'Pausar'}
+         </Button>
+         <Button
+           variant="outlined"
+           onClick={() => setIsAreaChart(prev => !prev)}
+         >
+           {isAreaChart ? 'Mostrar Linhas' : 'Mostrar Área'}
+         </Button>
+       </Stack>
 
-      <Box sx={{ width: '100%', height: 400 }}>
-        <ResponsiveContainer>
+      <Box sx={{ width: '100%', height: 400 }} ref={chartWrapperRef}>
+        { !chartReady ? (
+          <Box display="flex" alignItems="center" justifyContent="center" height="100%"><Typography variant="body2" sx={{ color: '#666' }}>Aguardando tamanho do contêiner...</Typography></Box>
+        ) : (
+          <ResponsiveContainer>
           {isAreaChart ? (
             <AreaChart data={currentData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -221,10 +228,11 @@ const InteractiveLineChart: React.FC<InterativeLineChartProps> = ({ esp32_unique
               ))}
             </LineChart>
           )}
-        </ResponsiveContainer>
-      </Box>
-    </Container>
-  );
-};
-
-export default InteractiveLineChart;
+          </ResponsiveContainer>
+        )}
+       </Box>
+     </Container>
+   );
+ };
+ 
+ export default InteractiveLineChart;

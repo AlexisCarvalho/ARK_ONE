@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// Setup DB connection (adjust DSN as needed)
-	db, err := sql.Open("postgres", "user=postgres password=user1232025 dbname=one_database sslmode=disable")
+	db, err := sql.Open("postgres", "host=172.17.0.2 user=postgres password=user1232025 dbname=one_database sslmode=disable")
 	if err != nil {
 		log.Fatal("Failed to connect to DB: ", err)
 	}

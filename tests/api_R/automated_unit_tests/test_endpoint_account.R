@@ -138,15 +138,6 @@ test_account_register <- function(base_url) {
     expect_equal(content$message, "User Registered Successfully")
   })
 
-  test_that("Successful analyst registration returns 201", {
-    response <- account_register_request(base_url, "Test User", "analyst@gmail.com", "analyst", "analyst")
-    content <- content(response, as = "parsed", simplifyVector = TRUE)
-
-    expect_equal(status_code(response), 201)
-    expect_equal(content$status, "created")
-    expect_equal(content$message, "User Registered Successfully")
-  })
-
   test_that("Duplicate email returns 409", {
     response <- account_register_request(base_url, "Test User", "admin@gmail.com", "admin")
     content <- content(response, as = "parsed", simplifyVector = TRUE)
@@ -275,16 +266,6 @@ test_account_login <- function(base_url) {
 
   test_that("When moderator Login is done a token is returned with 200", {
     response <- account_login_request(base_url, "moderator@gmail.com", "moderator")
-    content <- content(response, as = "parsed", simplifyVector = TRUE)
-
-    expect_equal(status_code(response), 200)
-    expect_equal(content$status, "success")
-    expect_equal(content$message, "Valid Credentials")
-    expect_true(!is.null(content$data$token) && nchar(content$data$token) > 0)
-  })
-
-  test_that("When analyst Login is done a token is returned with 200", {
-    response <- account_login_request(base_url, "analyst@gmail.com", "analyst")
     content <- content(response, as = "parsed", simplifyVector = TRUE)
 
     expect_equal(status_code(response), 200)

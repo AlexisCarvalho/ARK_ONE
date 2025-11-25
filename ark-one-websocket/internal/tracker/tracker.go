@@ -4,6 +4,7 @@ import (
 	"ark-one-websocket/api"
 	"ark-one-websocket/internal/model"
 	"ark-one-websocket/internal/repository"
+	"log"
 	"sync"
 	"time"
 )
@@ -41,15 +42,19 @@ func (m *MemoryStorage) SendData(d *api.TrackerData) api.GenericResponse {
 
 	// Append data
 	m.data[uniqueID] = append(m.data[uniqueID], td)
+	log.Printf("[tracker] appended data for %s, total entries: %d", uniqueID, len(m.data[uniqueID]))
 
 	// Update InsertCount
 	meta := m.metadata[uniqueID]
 	meta.InsertCount++
 	m.metadata[uniqueID] = meta
+	log.Printf("[tracker] InsertCount for %s is now %d", uniqueID, meta.InsertCount)
 
 	// Always cap memory to last 100 entries
 	if len(m.data[uniqueID]) > 100 {
+		log.Printf("[tracker] capping memory for %s from %d to 100", uniqueID, len(m.data[uniqueID]))
 		m.data[uniqueID] = m.data[uniqueID][len(m.data[uniqueID])-100:]
+		log.Printf("[tracker] capped entries for %s now %d", uniqueID, len(m.data[uniqueID]))
 	}
 
 	// If InsertCount reaches 100, persist the 100 entries
@@ -61,15 +66,19 @@ func (m *MemoryStorage) SendData(d *api.TrackerData) api.GenericResponse {
 			currentData = currentData[len(currentData)-100:]
 		}
 
+		log.Printf("[tracker] InsertCount==100 for %s, attempting to persist %d entries", uniqueID, len(currentData))
+
 		// Ensure we have the IDProductInstance
 		idProductInstance := meta.IDProductInstance
 		if idProductInstance == "" {
 			// Try to fetch from DB
 			id, err := m.repository.FetchProductInstanceID(uniqueID)
+			log.Printf("[tracker] FetchProductInstanceID result for %s: id=%s, err=%v", uniqueID, id, err)
 			if err != nil || id == "" {
 				// Reset InsertCount and update metadata
 				meta.InsertCount = 0
 				m.metadata[uniqueID] = meta
+				log.Printf("[tracker] could not find product instance id for %s, reset InsertCount and abort persist", uniqueID)
 				return api.GenericResponse{
 					Status:  "not_found",
 					Message: "Product instance not found for ESP32 ID",
@@ -79,16 +88,21 @@ func (m *MemoryStorage) SendData(d *api.TrackerData) api.GenericResponse {
 			idProductInstance = id
 			meta.IDProductInstance = idProductInstance
 			m.metadata[uniqueID] = meta
+			log.Printf("[tracker] updated metadata IDProductInstance for %s -> %s", uniqueID, idProductInstance)
 		}
 
 		// Save to DB using the IDProductInstance
+		log.Printf("[tracker] saving %d entries for product instance %s", len(currentData), idProductInstance)
 		err := m.repository.SaveTrackerData(idProductInstance, currentData)
 		if err != nil {
+			log.Printf("[tracker] failed to persist data for %s: %v", idProductInstance, err)
 			return api.GenericResponse{
 				Status:  "error",
 				Message: "Failed to persist data to database: " + err.Error(),
 			}
 		}
+
+		log.Printf("[tracker] persisted data for product instance %s", idProductInstance)
 
 		// Reset InsertCount
 		meta.InsertCount = 0
@@ -102,6 +116,7 @@ func (m *MemoryStorage) SendData(d *api.TrackerData) api.GenericResponse {
 		}
 	}
 
+	log.Printf("[tracker] data accepted in memory for %s (InsertCount %d)", uniqueID, m.metadata[uniqueID].InsertCount)
 	return api.GenericResponse{
 		Status:  "accepted",
 		Message: "Data stored in memory",

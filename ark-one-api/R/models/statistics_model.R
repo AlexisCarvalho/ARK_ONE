@@ -15,6 +15,21 @@ fetch_esp32_data_today_by_instance <- function(id_product_instance) {
   }, error = function(e) stop(e))
 }
 
+fetch_esp32_data_today_by_esp32 <- function(esp32_unique_id) {
+  con <- get_conn()
+
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    stop("Database Connection Failed")
+  }
+
+  on.exit(pool_return(con), add = TRUE)
+
+  tryCatch({
+    query <- "SELECT * FROM get_esp32_data_today($1)"
+    dbGetQuery(con, query, params = list(esp32_unique_id))
+  }, error = function(e) stop(e))
+}
+
 fetch_esp32_data_week_by_instance <- function(id_product_instance) {
   con <- get_conn()
 
@@ -27,5 +42,20 @@ fetch_esp32_data_week_by_instance <- function(id_product_instance) {
   tryCatch({
     query <- "SELECT * FROM get_esp32_data_week($1)"
     dbGetQuery(con, query, params = list(id_product_instance))
+  }, error = function(e) stop(e))
+}
+
+fetch_esp32_weekly_minmax_by_esp32 <- function(esp32_unique_id) {
+  con <- get_conn()
+
+  if (is.null(con) || !DBI::dbIsValid(con)) {
+    stop("Database Connection Failed")
+  }
+
+  on.exit(pool_return(con), add = TRUE)
+
+  tryCatch({
+    query <- "SELECT * FROM get_esp32_weekly_minmax($1)"
+    dbGetQuery(con, query, params = list(esp32_unique_id))
   }, error = function(e) stop(e))
 }

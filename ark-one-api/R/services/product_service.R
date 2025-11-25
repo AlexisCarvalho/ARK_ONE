@@ -5,6 +5,7 @@
 # +-----------------------+
 
 source("../models/product_model.R", chdir = TRUE)
+source("../services/affiliation_service.R", chdir = TRUE)
 source("solar_tracker_service.R", chdir = TRUE)
 source("../utils/response_handler.R", chdir = TRUE)
 source("../utils/request_handler.R", chdir = TRUE)
@@ -366,19 +367,53 @@ get_products_with_id <- function(id_product) {
 
 # Function to get all products owned by a specific user
 get_products_owned_with_id <- function(req, id_product) {
-  id_user <- tryCatch(
-    get_id_user_from_req(req),
-    error = function(e) {
-      NULL
-    }
+  # determine caller role
+  user_role <- tryCatch(
+    get_user_role_from_req(req),
+    error = function(e) NULL
   )
 
-  if (is.null(id_user)) {
+  if (is.null(user_role)) {
     return(list(
       status = "unauthorized",
-      message = "Failed to identify user, malformed or invalid token",
+      message = "Failed to identify user role",
       data = list(products_owned = NULL)
     ))
+  }
+
+  # If caller is analyst, resolve owner id via affiliation service
+  if (user_role == "analyst") {
+    owner_resp <- tryCatch(get_owner_for_analyst(req), error = function(e) e)
+    if (inherits(owner_resp, 'error')) {
+      return(list(
+        status = "internal_server_error",
+        message = paste("Unexpected Error:", owner_resp$message),
+        data = list(products_owned = NULL)
+      ))
+    }
+
+    if (owner_resp$status != 'success') {
+      return(list(
+        status = owner_resp$status,
+        message = owner_resp$message,
+        data = list(products_owned = NULL)
+      ))
+    }
+
+    id_user <- owner_resp$data$id_owner
+  } else {
+    id_user <- tryCatch(
+      get_id_user_from_req(req),
+      error = function(e) NULL
+    )
+
+    if (is.null(id_user)) {
+      return(list(
+        status = "unauthorized",
+        message = "Failed to identify user, malformed or invalid token",
+        data = list(products_owned = NULL)
+      ))
+    }
   }
 
   if (is_invalid_utf8(id_product) || !UUIDvalidate(id_product)) {

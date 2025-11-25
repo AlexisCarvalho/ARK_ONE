@@ -84,17 +84,17 @@ decompose_time_series <- function(series_data, frequency) {
 # |       STATISTICS        |
 # +-------------------------+
 
-get_esp32_summary_today <- function(id_product_instance) {
-  if (is_invalid_utf8(id_product_instance) || !UUIDvalidate(id_product_instance)) {
+get_esp32_summary_today <- function(esp32_unique_id) {
+  if (is_invalid_utf8(esp32_unique_id) || !is.character(esp32_unique_id) || nchar(esp32_unique_id) == 0) {
     return(list(
       status = "bad_request",
-      message = "Missing or Invalid Product ID",
-      data = list(category = NULL)
+      message = "Missing or Invalid esp32_unique_id",
+      data = list(summary = NULL)
     ))
   }
 
   esp32_data <- tryCatch(
-    fetch_esp32_data_today_by_instance(id_product_instance),
+    fetch_esp32_data_today_by_esp32(esp32_unique_id),
     error = function(e) e
   )
 
@@ -109,7 +109,7 @@ get_esp32_summary_today <- function(id_product_instance) {
   if (!is.data.frame(esp32_data) || nrow(esp32_data) == 0) {
     return(list(
       status = "not_found",
-      message = "No ESP32 data found for this Product ID today",
+      message = "No ESP32 data found for this ESP32 today",
       data = list(summary = NULL)
     ))
   }
@@ -195,5 +195,49 @@ get_solar_tracker_mem_volt_trend_detection <- function(id_product_instance, freq
 
   with(validation_result$data,
     decompose_time_series(solar_tracker_data$voltage, converted_frequency)
+  )
+}
+
+get_esp32_weekly_minmax <- function(esp32_unique_id) {
+  if (is_invalid_utf8(esp32_unique_id) || !is.character(esp32_unique_id) || nchar(esp32_unique_id) == 0) {
+    return(list(
+      status = "bad_request",
+      message = "Missing or Invalid esp32_unique_id",
+      data = list(weekly = NULL)
+    ))
+  }
+
+  result <- tryCatch(
+    fetch_esp32_weekly_minmax_by_esp32(esp32_unique_id),
+    error = function(e) e
+  )
+
+  if (inherits(result, "error")) {
+    return(list(
+      status = "internal_server_error",
+      message = paste("Unexpected Error:", result$message),
+      data = list(weekly = NULL)
+    ))
+  }
+
+  if (!is.data.frame(result) || nrow(result) == 0) {
+    return(list(
+      status = "not_found",
+      message = "No weekly min/max data found for this ESP32",
+      data = list(weekly = NULL)
+    ))
+  }
+
+  # ensure proper types
+  result$day_date <- as.character(result$day_date)
+  result$min_voltage <- as.numeric(result$min_voltage)
+  result$max_voltage <- as.numeric(result$max_voltage)
+  result$min_current <- as.numeric(result$min_current)
+  result$max_current <- as.numeric(result$max_current)
+
+  list(
+    status = "success",
+    message = "Weekly min/max data successfully retrieved",
+    data = list(weekly = result)
   )
 }

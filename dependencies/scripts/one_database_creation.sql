@@ -124,7 +124,7 @@ AFTER INSERT ON product_instance
 FOR EACH ROW
 EXECUTE FUNCTION insert_user_product();
 
-CREATE OR REPLACE FUNCTION get_esp32_data_today(instance_id UUID)
+CREATE OR REPLACE FUNCTION get_esp32_data_today(p_esp32_unique_id VARCHAR)
 RETURNS TABLE (
   id_insertion UUID,
   id_product_instance UUID,
@@ -136,8 +136,8 @@ BEGIN
   RETURN QUERY
   SELECT e.id_insertion, e.id_product_instance, e.common_data, e.product_specific_data, e.created_at
   FROM esp32_data e
-  WHERE e.id_product_instance = instance_id
-    AND e.created_at::date = CURRENT_DATE;
+  JOIN product_instance pi ON pi.id_product_instance = e.id_product_instance
+  WHERE pi.esp32_unique_id = p_esp32_unique_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -156,6 +156,32 @@ BEGIN
   WHERE e.id_product_instance = instance_id
     AND e.created_at::date >= date_trunc('week', CURRENT_DATE)
     AND e.created_at::date < date_trunc('week', CURRENT_DATE) + INTERVAL '7 days';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_esp32_weekly_minmax(p_esp32_unique_id VARCHAR)
+RETURNS TABLE (
+  day_date DATE,
+  min_voltage NUMERIC,
+  max_voltage NUMERIC,
+  min_current NUMERIC,
+  max_current NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    (e.created_at AT TIME ZONE 'UTC')::date AS day_date,
+    MIN((e.common_data->>'voltage')::numeric) AS min_voltage,
+    MAX((e.common_data->>'voltage')::numeric) AS max_voltage,
+    MIN((e.common_data->>'current')::numeric) AS min_current,
+    MAX((e.common_data->>'current')::numeric) AS max_current
+  FROM esp32_data e
+  JOIN product_instance pi ON pi.id_product_instance = e.id_product_instance
+  WHERE pi.esp32_unique_id = p_esp32_unique_id
+    AND (e.created_at AT TIME ZONE 'UTC')::date >= (date_trunc('week', CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))::date
+    AND (e.created_at AT TIME ZONE 'UTC')::date < ((date_trunc('week', CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))::date + INTERVAL '7 days')
+  GROUP BY day_date
+  ORDER BY day_date;
 END;
 $$ LANGUAGE plpgsql;
 
