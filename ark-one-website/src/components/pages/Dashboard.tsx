@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Tabs, Tab, Box, Grid, Typography, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
-import TodayVoltageChart from '../charts/TodayVoltageChart';
-import TodayCurrentChart from '../charts/TodayCurrentChart';
 import StatisticsCardVoltage from '../charts/StatisticsCardVoltage';
 import StatisticsCardCurrent from '../charts/StatisticsCardCurrent';
 import InterativeLineChart from '../charts/InterativeLineChart';
