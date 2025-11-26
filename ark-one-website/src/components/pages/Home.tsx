@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setUserName } from '../../auth';
 import { gsap } from 'gsap';
 import './Home.css';
 
@@ -7,6 +8,8 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Clear any stored username so NavBar doesn't show it when returning to Home
+    try { setUserName(null); } catch (e) { /* ignore */ }
     initAnimations();
   }, []);
 
